@@ -8,7 +8,10 @@ connectDB();
 
 const app = express();
 
-app.use(cors({ origin: '*', credentials: true }));
+// origin:'*' এবং credentials:true একসাথে কাজ করে না
+// আপনি JWT use করলে credentials লাগবে না, তাই এটাই যথেষ্ট
+app.use(cors({ origin: '*' }));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -25,8 +28,12 @@ app.get('/', (req, res) => {
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ success: false, message: 'Server Error', error: err.message });
+  res
+    .status(500)
+    .json({ success: false, message: 'Server Error', error: err.message });
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`✅ My Amal Server running on port ${PORT}`));
+app.listen(PORT, () =>
+  console.log(`✅ My Amal Server running on port ${PORT}`),
+);
