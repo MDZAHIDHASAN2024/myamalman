@@ -22,7 +22,7 @@ app.use('/api/settings', require('./routes/settingsRoutes'));
 app.use('/api/tips', require('./routes/tipRoutes'));
 
 app.get('/', (req, res) => {
-  res.json({ message: 'My Amal API Running', version: '1.0.0' });
+  res.json({ message: 'My Amal API Running', version: '0.1.0' });
 });
 
 // ✅ Health Check Route (UptimeRobot এর জন্য)

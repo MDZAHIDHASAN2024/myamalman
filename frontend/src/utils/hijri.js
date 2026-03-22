@@ -1,6 +1,4 @@
 // Hijri date utility — Bangladesh timezone + Maghrib-aware + Real-time
-// Islamic দিন শুরু হয় Maghrib এ (~18:00 BD time)
-// Intl API midnight এ change করে, তাই Maghrib এর আগে 1 দিন পিছিয়ে দেখাতে হয়
 
 const TZ = 'Asia/Dhaka';
 const MAGHRIB_HOUR = 18;
@@ -26,12 +24,13 @@ export function getCurrentHijriDisplay() {
   try {
     const parts = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
       day: 'numeric',
-      month: 'short',
+      month: 'long', // 'short' নয় — mobile compatibility এর জন্য
       year: 'numeric',
       timeZone: TZ,
     }).formatToParts(d);
     const get = (t) => parts.find((p) => p.type === t)?.value || '';
-    return `${get('month')} ${get('day')}, ${get('year')} AH`;
+    const monthShort = get('month').slice(0, 4); // সব device এ consistent
+    return `${monthShort}. ${get('day')}, ${get('year')} AH`;
   } catch {
     return '';
   }
@@ -91,12 +90,15 @@ export function toHijri(dateStr) {
 
 export function toHijriShort(dateStr) {
   try {
-    return new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
+    const parts = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
       day: 'numeric',
-      month: 'short',
+      month: 'long', // long দিয়ে নিয়ে নিজে short করি
       year: 'numeric',
       timeZone: TZ,
-    }).format(new Date(dateStr + 'T12:00:00'));
+    }).formatToParts(new Date(dateStr + 'T12:00:00'));
+    const get = (t) => parts.find((p) => p.type === t)?.value || '';
+    const monthShort = get('month').slice(0, 4);
+    return `${monthShort}. ${get('day')}, ${get('year')} AH`;
   } catch {
     return '';
   }
@@ -131,14 +133,12 @@ export function isSunnahFastingDay(dateStr) {
 }
 
 // ── Real-time Hijri hook ──
-// প্রতি মিনিটে check করে, Maghrib হলে auto update
 import { useState, useEffect } from 'react';
 
 export function useHijriDisplay() {
   const [hijri, setHijri] = useState(() => getCurrentHijriDisplay());
 
   useEffect(() => {
-    // প্রতি মিনিটে check
     const interval = setInterval(() => {
       setHijri(getCurrentHijriDisplay());
     }, 60 * 1000);
