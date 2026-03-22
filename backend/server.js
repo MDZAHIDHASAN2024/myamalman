@@ -8,10 +8,7 @@ connectDB();
 
 const app = express();
 
-// origin:'*' এবং credentials:true একসাথে কাজ করে না
-// আপনি JWT use করলে credentials লাগবে না, তাই এটাই যথেষ্ট
 app.use(cors({ origin: '*' }));
-
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -21,6 +18,7 @@ app.use('/api/amal', require('./routes/amalRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/reminder', require('./routes/reminderRoutes'));
 app.use('/api/settings', require('./routes/settingsRoutes'));
+app.use('/api/tips', require('./routes/tipRoutes')); // ← নতুন
 
 app.get('/', (req, res) => {
   res.json({ message: 'My Amal API Running', version: '1.0.0' });
