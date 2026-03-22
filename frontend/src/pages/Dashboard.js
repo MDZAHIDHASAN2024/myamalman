@@ -1,57 +1,82 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Layout from '../components/common/Layout';
 import API from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import {
   formatDate,
   getTodayStr,
-  getCurrentHijriDisplay,
-  isAyyamBeed,
-  isSunnahFastingDay,
+  useHijriDisplay, // ← real-time hook
+  getBDWeekday,
+  getTodayHijriDay,
 } from '../utils/hijri';
 import toast from 'react-hot-toast';
+
+function getTodayAlerts() {
+  const alerts = [];
+  const weekday = getBDWeekday();
+  const hijriDay = getTodayHijriDay();
+
+  if (weekday === 0)
+    alerts.push({
+      type: 'monday_sunnah',
+      label: 'Monday Sunnah',
+      message: 'আগামীকাল সোমবার — সুন্নাহ রোজা',
+    });
+  if (weekday === 3)
+    alerts.push({
+      type: 'thursday_sunnah',
+      label: 'Thursday Sunnah',
+      message: 'আগামীকাল বৃহস্পতিবার — সুন্নাহ রোজা',
+    });
+  if (hijriDay === 12)
+    alerts.push({
+      type: 'ayyam_13',
+      label: 'আইয়্যামুল বীয ১৩',
+      message: 'আগামীকাল হিজরী ১৩ তারিখ — আইয়্যামুল বীয রোজা',
+    });
+  if (hijriDay === 13)
+    alerts.push({
+      type: 'ayyam_14',
+      label: 'আইয়্যামুল বীয ১৪',
+      message: 'আগামীকাল হিজরী ১৪ তারিখ — আইয়্যামুল বীয রোজা',
+    });
+  if (hijriDay === 14)
+    alerts.push({
+      type: 'ayyam_15',
+      label: 'আইয়্যামুল বীয ১৫',
+      message: 'আগামীকাল হিজরী ১৫ তারিখ — আইয়্যামুল বীয রোজা',
+    });
+
+  return alerts;
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
-  const [fastingAlerts, setFastingAlerts] = useState([]);
-  const [dismissedAlerts, setDismissedAlerts] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem('dismissed_fasting') || '[]');
-    } catch {
-      return [];
-    }
-  });
   const [loading, setLoading] = useState(true);
-  const today = getTodayStr();
+  const [dismissed, setDismissed] = useState([]); // in-memory: refresh এ reset
 
-  useEffect(() => {
-    Promise.all([
-      API.get('/amal/dashboard'),
-      API.get('/reminder/fasting-upcoming'),
-    ])
-      .then(([dashRes, fastRes]) => {
-        setStats(dashRes.data.data);
-        // Only show alerts for today + 1 day ahead (the "1 day before" warning)
-        const all = fastRes.data.data || [];
-        const alertWorthy = all.filter(
-          (f) => f.daysUntil >= 0 && f.daysUntil <= 1,
-        );
-        setFastingAlerts(alertWorthy);
-      })
+  const hijri = useHijriDisplay(); // ← real-time, Maghrib এ auto update
+  const todayStr = getTodayStr();
+  const todayFormatted = formatDate(todayStr);
+
+  const todayAlerts = getTodayAlerts();
+  const visibleAlerts = todayAlerts.filter((a) => !dismissed.includes(a.type));
+
+  const dismissAlert = (type) => setDismissed((prev) => [...prev, type]);
+
+  const loadData = useCallback(() => {
+    setLoading(true);
+    setStats(null);
+    API.get('/amal/dashboard')
+      .then((res) => setStats(res.data.data))
       .catch(() => toast.error('Data load failed'))
       .finally(() => setLoading(false));
   }, []);
 
-  const dismissAlert = (key) => {
-    const updated = [...dismissedAlerts, key];
-    setDismissedAlerts(updated);
-    localStorage.setItem('dismissed_fasting', JSON.stringify(updated));
-  };
-
-  const visibleAlerts = fastingAlerts.filter(
-    (a) => !dismissedAlerts.includes(`${a.date}_${a.type}`),
-  );
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   if (loading)
     return (
@@ -78,11 +103,6 @@ export default function Dashboard() {
     { key: 'maghrib', label: 'মাগরিব', emoji: '🌇' },
     { key: 'isha', label: 'ইশা', emoji: '🌙' },
   ];
-
-  const todayIsAyyam = isAyyamBeed(today);
-  const todayIsSunnah = isSunnahFastingDay(today);
-  const hijri = getCurrentHijriDisplay();
-  const todayFormatted = formatDate(today);
 
   return (
     <Layout title="Dashboard">
@@ -116,25 +136,7 @@ export default function Dashboard() {
               </span>
             )}
             <button
-              onClick={() => {
-                setLoading(true);
-                setStats(null);
-                setFastingAlerts([]);
-                Promise.all([
-                  API.get('/amal/dashboard'),
-                  API.get('/reminder/fasting-upcoming'),
-                ])
-                  .then(([d, f]) => {
-                    setStats(d.data.data);
-                    setFastingAlerts(
-                      (f.data.data || []).filter(
-                        (x) => x.daysUntil >= 0 && x.daysUntil <= 1,
-                      ),
-                    );
-                  })
-                  .catch(() => toast.error('Refresh failed'))
-                  .finally(() => setLoading(false));
-              }}
+              onClick={loadData}
               style={{
                 background: 'var(--bg-tertiary)',
                 border: '1px solid var(--border)',
@@ -155,24 +157,40 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Fasting notification alerts - shown 1 day before */}
-      {visibleAlerts.map((f) => (
+      {/* Fasting Alerts */}
+      {visibleAlerts.map((a) => (
         <div
-          key={`${f.date}_${f.type}`}
-          className="fasting-alert mb-2"
-          style={{ position: 'relative' }}
+          key={a.type}
+          style={{
+            position: 'relative',
+            background: 'var(--accent-bg)',
+            border: '1.5px solid var(--accent)',
+            borderRadius: 12,
+            padding: '12px 40px 12px 14px',
+            marginBottom: 10,
+          }}
         >
           <button
-            className="alert-close"
-            onClick={() => dismissAlert(`${f.date}_${f.type}`)}
+            onClick={() => dismissAlert(a.type)}
+            style={{
+              position: 'absolute',
+              top: 8,
+              right: 10,
+              background: 'none',
+              border: 'none',
+              fontSize: 20,
+              cursor: 'pointer',
+              color: 'var(--text-muted)',
+              lineHeight: 1,
+              padding: '2px 6px',
+            }}
           >
             ×
           </button>
           <div
             style={{ fontWeight: 800, color: 'var(--accent)', fontSize: 14 }}
           >
-            {f.daysUntil === 0 ? '📌 আজ রোজার দিন!' : '🔔 আগামীকাল রোজা!'} —{' '}
-            {f.type}
+            🔔 আগামীকাল রোজা! — {a.label}
           </div>
           <div
             style={{
@@ -181,32 +199,10 @@ export default function Dashboard() {
               marginTop: 4,
             }}
           >
-            📅 {formatDate(f.date)} —{' '}
-            {f.daysUntil === 0
-              ? 'আজ রোজা রাখুন ইনশাআল্লাহ 🤲'
-              : 'আগামীকালের রোজার নিয়ত করুন ইনশাআল্লাহ 🤲'}
+            {a.message} — আগামীকালের নিয়ত করুন ইনশাআল্লাহ 🤲
           </div>
         </div>
       ))}
-
-      {/* Today special alert */}
-      {(todayIsAyyam || todayIsSunnah) &&
-        !visibleAlerts.find((a) => a.daysUntil === 0) && (
-          <div className="fasting-alert mb-2">
-            <div
-              style={{ fontWeight: 800, color: 'var(--accent)', fontSize: 14 }}
-            >
-              {todayIsAyyam
-                ? '🌙 আজ আইয়্যামুল বীযের রোজা (১৩/১৪/১৫ হিজরী)!'
-                : '✨ আজ সুন্নাহ রোজার দিন (সোম/বৃহস্পতি)!'}
-            </div>
-            <div
-              style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}
-            >
-              রোজা রাখুন ইনশাআল্লাহ 🤲
-            </div>
-          </div>
-        )}
 
       {/* Stats Grid */}
       <div className="stats-grid mb-3">
@@ -249,7 +245,6 @@ export default function Dashboard() {
       </div>
 
       <div className="grid-2 mb-3">
-        {/* Today Salah */}
         <div className="card">
           <div className="card-header">
             <span className="title">🕌 আজকের নামাজ</span>
@@ -343,7 +338,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Salah Consistency */}
         <div className="card">
           <div className="card-header">
             <span className="title">📊 নামাজের ধারাবাহিকতা</span>
@@ -388,7 +382,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Best Day */}
       {stats?.bestDay && (
         <div className="card">
           <div className="card-header">

@@ -1,0 +1,677 @@
+import React, { useEffect, useState, useCallback } from 'react';
+import Layout from '../components/common/Layout';
+import API from '../utils/api';
+import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
+
+const TABS = [
+  { key: 'tips', label: '💡 Tips' },
+  { key: 'sunnah', label: '🌙 Sunnah' },
+];
+
+// ── Delete Confirm Modal ──
+function DeleteModal({ tip, onConfirm, onClose, deleting }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="modal"
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: 400, textAlign: 'center' }}
+      >
+        <div style={{ padding: '32px 24px 24px' }}>
+          <div style={{ fontSize: 52, marginBottom: 12 }}>🗑️</div>
+          <div
+            style={{
+              fontWeight: 800,
+              fontSize: 17,
+              color: 'var(--text-primary)',
+              marginBottom: 8,
+            }}
+          >
+            Delete করবেন?
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              color: 'var(--text-muted)',
+              marginBottom: 6,
+              lineHeight: 1.6,
+            }}
+          >
+            এই card টি permanently delete হয়ে যাবে।
+          </div>
+          <div
+            style={{
+              background: 'var(--bg-tertiary)',
+              border: '1px solid var(--border)',
+              borderRadius: 10,
+              padding: '10px 14px',
+              margin: '12px 0 20px',
+              fontSize: 13,
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              wordBreak: 'break-word',
+            }}
+          >
+            "{tip.title}"
+          </div>
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+            <button
+              onClick={onClose}
+              className="btn btn-secondary"
+              style={{ minWidth: 90 }}
+              disabled={deleting}
+            >
+              বাতিল
+            </button>
+            <button
+              onClick={onConfirm}
+              className="btn btn-danger"
+              style={{ minWidth: 90 }}
+              disabled={deleting}
+            >
+              {deleting ? '...' : '🗑️ Delete'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Add/Edit Modal ──
+function TipModal({ initial, type, onClose, onSave }) {
+  const [title, setTitle] = useState(initial?.title || '');
+  const [items, setItems] = useState(
+    initial?.items?.map((i) => i.text) || [''],
+  );
+  const [saving, setSaving] = useState(false);
+
+  const updateItem = (i, val) => {
+    const updated = [...items];
+    updated[i] = val;
+    setItems(updated);
+  };
+  const addItem = () => setItems((prev) => [...prev, '']);
+  const removeItem = (i) =>
+    setItems((prev) => prev.filter((_, idx) => idx !== i));
+
+  const handleSave = async () => {
+    if (!title.trim()) return toast.error('Heading দিন');
+    const filtered = items.filter((t) => t.trim());
+    if (!filtered.length) return toast.error('কমপক্ষে ১টা item দিন');
+    setSaving(true);
+    await onSave({
+      title: title.trim(),
+      type,
+      items: filtered.map((text) => ({ text })),
+    });
+    setSaving(false);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="modal"
+        onClick={(e) => e.stopPropagation()}
+        style={{ maxWidth: 500 }}
+      >
+        <div className="card-header">
+          <span className="title">
+            {initial ? '✏️ Edit Card' : '➕ নতুন Card'}
+          </span>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              fontSize: 20,
+              cursor: 'pointer',
+              color: 'var(--text-muted)',
+            }}
+          >
+            ×
+          </button>
+        </div>
+        <div
+          className="card-body"
+          style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+        >
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Heading</label>
+            <input
+              className="form-control"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="হেডিং এড করুন "
+            />
+          </div>
+          <div>
+            <label className="form-label">Items</label>
+            {items.map((item, i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'flex',
+                  gap: 8,
+                  marginBottom: 7,
+                  alignItems: 'center',
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: 'var(--text-muted)',
+                    minWidth: 22,
+                  }}
+                >
+                  {i + 1}.
+                </span>
+                <input
+                  className="form-control"
+                  value={item}
+                  onChange={(e) => updateItem(i, e.target.value)}
+                  placeholder={'Item ' + (i + 1)}
+                  style={{ flex: 1 }}
+                />
+                {items.length > 1 && (
+                  <button
+                    onClick={() => removeItem(i)}
+                    style={{
+                      background: 'var(--danger-bg)',
+                      border: 'none',
+                      borderRadius: 6,
+                      padding: '6px 10px',
+                      cursor: 'pointer',
+                      color: 'var(--danger)',
+                      fontSize: 14,
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+            <button
+              onClick={addItem}
+              className="btn btn-secondary btn-sm"
+              style={{ marginTop: 4 }}
+            >
+              + Item যোগ করুন
+            </button>
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              gap: 8,
+              justifyContent: 'flex-end',
+              marginTop: 4,
+            }}
+          >
+            <button onClick={onClose} className="btn btn-secondary">
+              বাতিল
+            </button>
+            <button
+              onClick={handleSave}
+              className="btn btn-primary"
+              disabled={saving}
+            >
+              {saving ? '...' : 'সেভ করুন'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Tip Card ──
+function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
+  const accent = type === 'sunnah' ? 'var(--purple)' : 'var(--accent)';
+  const accentBg = type === 'sunnah' ? 'var(--purple-bg)' : 'var(--accent-bg)';
+  const icon = type === 'sunnah' ? '🌙' : '💡';
+
+  return (
+    <div
+      style={{
+        background: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius)',
+        boxShadow: 'var(--shadow)',
+        marginBottom: 14,
+        overflow: 'hidden',
+        transition: 'var(--transition)',
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          background: accentBg,
+          borderBottom: '1px solid var(--border)',
+          padding: '13px 16px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 10,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 9,
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          <div
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 9,
+              background: accent,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 16,
+              flexShrink: 0,
+              marginTop: 1,
+            }}
+          >
+            {icon}
+          </div>
+          <span
+            style={{
+              fontWeight: 800,
+              fontSize: 14,
+              color: 'var(--text-primary)',
+              flex: 1,
+              minWidth: 0,
+              wordBreak: 'break-word',
+              lineHeight: 1.5,
+            }}
+          >
+            {tip.title}
+          </span>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            gap: 5,
+            alignItems: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <span
+            style={{
+              fontSize: 9,
+              fontWeight: 700,
+              color: accent,
+              background: accentBg,
+              border: '1px solid ' + accent,
+              borderRadius: 999,
+              padding: '2px 7px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {tip.createdBy && tip.createdBy.name}
+          </span>
+          {isOwner && (
+            <button
+              onClick={() => onEdit(tip)}
+              style={{
+                background: 'var(--bg-tertiary)',
+                border: '1px solid var(--border)',
+                borderRadius: 7,
+                padding: '5px 8px',
+                cursor: 'pointer',
+                fontSize: 12,
+                color: 'var(--text-secondary)',
+              }}
+            >
+              ✏️
+            </button>
+          )}
+          {(isOwner || isAdmin) && (
+            <button
+              onClick={() => onDelete(tip)}
+              style={{
+                background: 'var(--danger-bg)',
+                border: 'none',
+                borderRadius: 7,
+                padding: '5px 8px',
+                cursor: 'pointer',
+                fontSize: 12,
+                color: 'var(--danger)',
+              }}
+            >
+              🗑️
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Items */}
+      <div
+        style={{
+          padding: '14px 16px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 0,
+        }}
+      >
+        {tip.items.map((item, i) => (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              gap: 12,
+              alignItems: 'flex-start',
+              padding: '9px 0',
+              borderBottom:
+                i < tip.items.length - 1
+                  ? '1px solid var(--border-light)'
+                  : 'none',
+            }}
+          >
+            <div
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: 7,
+                background: accent,
+                color: 'white',
+                fontWeight: 800,
+                fontSize: 11,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                marginTop: 1,
+              }}
+            >
+              {i + 1}
+            </div>
+            <span
+              style={{
+                fontSize: 13,
+                color: 'var(--text-primary)',
+                lineHeight: 1.65,
+                flex: 1,
+                wordBreak: 'break-word',
+              }}
+            >
+              {item.text}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Footer */}
+      <div
+        style={{
+          padding: '8px 16px',
+          borderTop: '1px solid var(--border-light)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          background: 'var(--bg-tertiary)',
+        }}
+      >
+        <span
+          style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}
+        >
+          {tip.items.length} টি item
+        </span>
+        <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
+          {new Date(tip.createdAt).toLocaleDateString('bn-BD')}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page ──
+export default function TipsSunnah() {
+  const { user } = useAuth();
+  const isAdmin = user && user.role === 'admin';
+
+  const [activeTab, setActiveTab] = useState('tips');
+  const [tips, setTips] = useState([]);
+  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editTarget, setEditTarget] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null); // delete confirm
+  const [deleting, setDeleting] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({ type: activeTab });
+      if (search.trim()) params.set('search', search.trim());
+      const res = await API.get('/tips?' + params.toString());
+      setTips(res.data.data || []);
+    } catch (err) {
+      toast.error('Load failed');
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTab, search]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 400);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  const handleSave = async (data) => {
+    try {
+      if (editTarget) {
+        await API.put('/tips/' + editTarget._id, data);
+        toast.success('আপডেট হয়েছে');
+      } else {
+        await API.post('/tips', data);
+        toast.success('Card যোগ হয়েছে');
+      }
+      setShowModal(false);
+      setEditTarget(null);
+      load();
+    } catch (err) {
+      toast.error('সেভ failed');
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await API.delete('/tips/' + deleteTarget._id);
+      toast.success('Delete হয়েছে');
+      setDeleteTarget(null);
+      load();
+    } catch (err) {
+      toast.error('Delete failed');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return (
+    <Layout title="Tips & Sunnah">
+      {/* Top bar */}
+      <div style={{ marginBottom: 16 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 10,
+            marginBottom: 14,
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              background: 'var(--bg-tertiary)',
+              borderRadius: 10,
+              padding: 3,
+              border: '1px solid var(--border)',
+            }}
+          >
+            {TABS.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                style={{
+                  padding: '7px 22px',
+                  borderRadius: 8,
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  fontFamily: 'inherit',
+                  background:
+                    activeTab === tab.key
+                      ? 'var(--accent-grad)'
+                      : 'transparent',
+                  color:
+                    activeTab === tab.key ? 'white' : 'var(--text-secondary)',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => {
+              setEditTarget(null);
+              setShowModal(true);
+            }}
+            className="btn btn-primary"
+          >
+            ➕ নতুন Card
+          </button>
+        </div>
+
+        <div style={{ position: 'relative' }}>
+          <span
+            style={{
+              position: 'absolute',
+              left: 12,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              fontSize: 14,
+              color: 'var(--text-muted)',
+              pointerEvents: 'none',
+            }}
+          >
+            🔍
+          </span>
+          <input
+            className="form-control"
+            placeholder="Search করুন..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            style={{ paddingLeft: 36 }}
+          />
+        </div>
+      </div>
+
+      {/* Content */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 60 }}>
+          <div style={{ fontSize: 36, marginBottom: 10 }}>
+            {activeTab === 'tips' ? '💡' : '🌙'}
+          </div>
+          <div
+            style={{
+              color: 'var(--text-muted)',
+              fontSize: 13,
+              fontWeight: 600,
+            }}
+          >
+            Loading...
+          </div>
+        </div>
+      ) : tips.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 60 }}>
+          <div style={{ fontSize: 52, marginBottom: 12 }}>
+            {activeTab === 'tips' ? '💡' : '🌙'}
+          </div>
+          <div
+            style={{
+              color: 'var(--text-muted)',
+              fontSize: 14,
+              fontWeight: 700,
+              marginBottom: 6,
+            }}
+          >
+            {search ? 'কোনো result পাওয়া যায়নি' : 'এখনো কোনো card নেই'}
+          </div>
+          {!search && (
+            <button
+              onClick={() => {
+                setEditTarget(null);
+                setShowModal(true);
+              }}
+              className="btn btn-primary"
+              style={{ marginTop: 8 }}
+            >
+              ➕ প্রথম Card যোগ করুন
+            </button>
+          )}
+        </div>
+      ) : (
+        tips.map((tip) => {
+          const ownerId = tip.createdBy && (tip.createdBy._id || tip.createdBy);
+          const userId = user && user._id;
+          return (
+            <TipCard
+              key={tip._id}
+              tip={tip}
+              type={activeTab}
+              isOwner={ownerId === userId}
+              isAdmin={isAdmin}
+              onEdit={(t) => {
+                setEditTarget(t);
+                setShowModal(true);
+              }}
+              onDelete={(t) => setDeleteTarget(t)}
+            />
+          );
+        })
+      )}
+
+      {/* Add/Edit Modal */}
+      {showModal && (
+        <TipModal
+          initial={editTarget}
+          type={activeTab}
+          onClose={() => {
+            setShowModal(false);
+            setEditTarget(null);
+          }}
+          onSave={handleSave}
+        />
+      )}
+
+      {/* Delete Confirm Modal */}
+      {deleteTarget && (
+        <DeleteModal
+          tip={deleteTarget}
+          deleting={deleting}
+          onConfirm={handleDeleteConfirm}
+          onClose={() => setDeleteTarget(null)}
+        />
+      )}
+    </Layout>
+  );
+}

@@ -11,17 +11,40 @@ import AmalView from './pages/AmalView';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import Admin from './pages/Admin';
+import TipsSunnah from './pages/TipsSunnah';
 import './styles/global.css';
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--bg-primary)' }}><div style={{ textAlign: 'center' }}><div style={{ fontSize: 40 }}>☪️</div><div style={{ marginTop: 12, color: 'var(--text-muted)' }}>Loading My Amal...</div></div></div>;
+  if (loading)
+    return (
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100vh',
+          background: 'var(--bg-primary)',
+        }}
+      >
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 40 }}>☪️</div>
+          <div style={{ marginTop: 12, color: 'var(--text-muted)' }}>
+            Loading My Amal...
+          </div>
+        </div>
+      </div>
+    );
   return user ? children : <Navigate to="/login" replace />;
 }
 
 function AdminRoute({ children }) {
   const { user } = useAuth();
-  return user?.role === 'admin' ? children : <Navigate to="/dashboard" replace />;
+  return user?.role === 'admin' ? (
+    children
+  ) : (
+    <Navigate to="/dashboard" replace />
+  );
 }
 
 export default function App() {
@@ -29,16 +52,78 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <ThemeProvider>
-          <Toaster position="top-right" toastOptions={{ style: { background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)' }, duration: 3000 }} />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              style: {
+                background: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border)',
+              },
+              duration: 3000,
+            }}
+          />
           <Routes>
             <Route path="/login" element={<AuthPage />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-            <Route path="/amal-post" element={<PrivateRoute><AmalPost /></PrivateRoute>} />
-            <Route path="/amal-view" element={<PrivateRoute><AmalView /></PrivateRoute>} />
-            <Route path="/analytics" element={<PrivateRoute><Analytics /></PrivateRoute>} />
-            <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
-            <Route path="/admin" element={<PrivateRoute><AdminRoute><Admin /></AdminRoute></PrivateRoute>} />
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/amal-post"
+              element={
+                <PrivateRoute>
+                  <AmalPost />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/amal-view"
+              element={
+                <PrivateRoute>
+                  <AmalView />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <PrivateRoute>
+                  <Analytics />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/tips-sunnah"
+              element={
+                <PrivateRoute>
+                  <TipsSunnah />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <PrivateRoute>
+                  <Settings />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <PrivateRoute>
+                  <AdminRoute>
+                    <Admin />
+                  </AdminRoute>
+                </PrivateRoute>
+              }
+            />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </ThemeProvider>

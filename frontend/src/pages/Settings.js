@@ -571,9 +571,9 @@ export default function Settings() {
           <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
             {[
               ['App Name', 'My Amal — আমার আমল ট্র্যাকার'],
-              ['Version', 'v1.0.0'],
+              ['Version', 'v0.1.0'],
               ['Developer', 'Zahid Hasan'],
-              ['Contact', '01745940065'],
+              ['Contact', '+880 1745-940065'],
               ['Stack', 'MERN + MVC'],
               ['Account', `${user?.name} (${user?.role})`],
             ].map(([k, v]) => (
@@ -624,12 +624,12 @@ export default function Settings() {
             <div
               style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 800 }}
             >
-              💚 Developed by Zahid Hasan • 01745940065
+              💚 Developed by Zahid Hasan • +880 1745-940065
             </div>
             <div
               style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}
             >
-              My Amal v1.0.0 • Made with ❤️ for the Ummah
+              My Amal v0.1.0 • Made with ❤️ for the Ummah
             </div>
           </div>
         </div>
