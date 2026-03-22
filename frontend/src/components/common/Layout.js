@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import { useAuth } from '../../context/AuthContext';
@@ -15,20 +15,12 @@ const BASE_NAV = [
 
 export default function Layout({ children, title }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const navItems =
     user?.role === 'admin'
       ? [...BASE_NAV, { to: '/admin', icon: '🛡️', label: 'Admin' }]
       : BASE_NAV;
-
-  const totalCols = navItems.length + 1; // +1 for logout
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
 
   return (
     <div className="app-layout">
@@ -43,7 +35,7 @@ export default function Layout({ children, title }) {
         <div
           className="bottom-nav-items"
           style={{
-            gridTemplateColumns: `repeat(${totalCols}, 1fr)`,
+            gridTemplateColumns: `repeat(${navItems.length}, 1fr)`,
             display: 'grid',
           }}
         >
@@ -59,13 +51,6 @@ export default function Layout({ children, title }) {
               <span>{item.label}</span>
             </NavLink>
           ))}
-          <button
-            className="bottom-nav-item bnav-logout"
-            onClick={handleLogout}
-          >
-            <span className="bnav-icon">🚪</span>
-            <span>Logout</span>
-          </button>
         </div>
       </nav>
     </div>
