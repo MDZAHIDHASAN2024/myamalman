@@ -20,6 +20,47 @@ const COLORS = [
   { key: 'brown', bg: '#EFEBE9', accent: '#4E342E', label: 'বাদামি' },
 ];
 
+// ── Scroll to Top Button ──
+function ScrollToTopButton() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 300);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      style={{
+        position: 'fixed',
+        bottom: 28,
+        right: 22,
+        zIndex: 999,
+        width: 44,
+        height: 44,
+        borderRadius: '50%',
+        background: 'var(--accent-grad)',
+        border: 'none',
+        cursor: 'pointer',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 20,
+        color: 'white',
+        transition: 'opacity 0.2s, transform 0.2s',
+      }}
+      title="উপরে যান"
+    >
+      ↑
+    </button>
+  );
+}
+
 // ── Delete Confirm Modal ──
 function DeleteModal({ tip, onConfirm, onClose, deleting }) {
   return (
@@ -93,25 +134,19 @@ function DeleteModal({ tip, onConfirm, onClose, deleting }) {
 // ── Add/Edit Modal ──
 function TipModal({ initial, type, onClose, onSave }) {
   const [title, setTitle] = useState(initial?.title || '');
-
-  // numbered items: { text }
   const [numberedItems, setNumberedItems] = useState(
     initial?.numberedItems?.map((i) => i.text) || [''],
   );
-
-  // expandable items: { title, detail }
   const [expandableItems, setExpandableItems] = useState(
     initial?.expandableItems?.map((i) => ({
       title: i.title,
       detail: i.detail,
     })) || [{ title: '', detail: '' }],
   );
-
   const [color, setColor] = useState(initial?.color || COLORS[0].bg);
   const [customColor, setCustomColor] = useState('#ffffff');
   const [saving, setSaving] = useState(false);
 
-  // Numbered item handlers
   const updateNumbered = (i, val) => {
     const updated = [...numberedItems];
     updated[i] = val;
@@ -121,7 +156,6 @@ function TipModal({ initial, type, onClose, onSave }) {
   const removeNumbered = (i) =>
     setNumberedItems((prev) => prev.filter((_, idx) => idx !== i));
 
-  // Expandable item handlers
   const updateExpandable = (i, field, val) => {
     const updated = [...expandableItems];
     updated[i] = { ...updated[i], [field]: val };
@@ -138,7 +172,6 @@ function TipModal({ initial, type, onClose, onSave }) {
     const filteredExpandable = expandableItems.filter((e) => e.title.trim());
     if (!filteredNumbered.length && !filteredExpandable.length)
       return toast.error('কমপক্ষে ১টা item দিন');
-
     setSaving(true);
     await onSave({
       title: title.trim(),
@@ -195,7 +228,6 @@ function TipModal({ initial, type, onClose, onSave }) {
             ×
           </button>
         </div>
-
         <div
           className="card-body"
           style={{
@@ -346,7 +378,6 @@ function TipModal({ initial, type, onClose, onSave }) {
             </div>
           </div>
 
-          {/* Divider */}
           <div style={{ borderTop: '1px dashed var(--border)', margin: '0' }} />
 
           {/* Expandable Items */}
@@ -561,8 +592,6 @@ function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
 
   const hasNumbered = tip.numberedItems && tip.numberedItems.length > 0;
   const hasExpandable = tip.expandableItems && tip.expandableItems.length > 0;
-
-  // fallback: support old `items` field if new fields not present
   const legacyItems = !hasNumbered && !hasExpandable && tip.items;
 
   return (
@@ -577,9 +606,7 @@ function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
         transition: 'var(--transition)',
       }}
     >
-      {/* Color bar */}
       <div style={{ height: 4, background: accent }} />
-      {/* Header */}
       <div
         style={{
           background: 'var(--bg-card)',
@@ -687,7 +714,6 @@ function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
         </div>
       </div>
 
-      {/* Legacy items fallback */}
       {legacyItems && (
         <div
           style={{
@@ -745,7 +771,6 @@ function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
         </div>
       )}
 
-      {/* Numbered Items Section */}
       {hasNumbered && (
         <>
           <div
@@ -809,7 +834,6 @@ function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
         </>
       )}
 
-      {/* Expandable Items Section */}
       {hasExpandable && (
         <>
           <div
@@ -838,7 +862,6 @@ function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
         </>
       )}
 
-      {/* Footer */}
       <div
         style={{
           padding: '8px 16px',
@@ -914,7 +937,6 @@ export default function TipsSunnah() {
   useEffect(() => {
     loadCounts();
   }, [loadCounts]);
-
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput), 400);
     return () => clearTimeout(t);
@@ -956,6 +978,9 @@ export default function TipsSunnah() {
 
   return (
     <Layout title="Tips & Sunnah">
+      {/* Scroll to Top Button */}
+      <ScrollToTopButton />
+
       {/* Top bar */}
       <div style={{ marginBottom: 16 }}>
         <div
@@ -1123,7 +1148,6 @@ export default function TipsSunnah() {
         })
       )}
 
-      {/* Add/Edit Modal */}
       {showModal && (
         <TipModal
           initial={editTarget}
@@ -1136,7 +1160,6 @@ export default function TipsSunnah() {
         />
       )}
 
-      {/* Delete Confirm Modal */}
       {deleteTarget && (
         <DeleteModal
           tip={deleteTarget}
