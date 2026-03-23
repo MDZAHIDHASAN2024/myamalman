@@ -9,6 +9,17 @@ const TABS = [
   { key: 'sunnah', label: '🌙 Sunnah' },
 ];
 
+const COLORS = [
+  { key: 'green', bg: '#E8F5E9', accent: '#2E7D32', label: 'সবুজ' },
+  { key: 'blue', bg: '#E3F2FD', accent: '#1565C0', label: 'নীল' },
+  { key: 'purple', bg: '#EDE7F6', accent: '#6A1B9A', label: 'বেগুনি' },
+  { key: 'teal', bg: '#E0F2F1', accent: '#00695C', label: 'টিল' },
+  { key: 'orange', bg: '#FFF3E0', accent: '#E65100', label: 'কমলা' },
+  { key: 'pink', bg: '#FCE4EC', accent: '#AD1457', label: 'গোলাপি' },
+  { key: 'indigo', bg: '#E8EAF6', accent: '#283593', label: 'ইন্ডিগো' },
+  { key: 'brown', bg: '#EFEBE9', accent: '#4E342E', label: 'বাদামি' },
+];
+
 // ── Delete Confirm Modal ──
 function DeleteModal({ tip, onConfirm, onClose, deleting }) {
   return (
@@ -96,6 +107,8 @@ function TipModal({ initial, type, onClose, onSave }) {
     })) || [{ title: '', detail: '' }],
   );
 
+  const [color, setColor] = useState(initial?.color || COLORS[0].bg);
+  const [customColor, setCustomColor] = useState('#ffffff');
   const [saving, setSaving] = useState(false);
 
   // Numbered item handlers
@@ -130,6 +143,7 @@ function TipModal({ initial, type, onClose, onSave }) {
     await onSave({
       title: title.trim(),
       type,
+      color,
       numberedItems: filteredNumbered.map((text) => ({ text })),
       expandableItems: filteredExpandable.map((e) => ({
         title: e.title.trim(),
@@ -267,6 +281,71 @@ function TipModal({ initial, type, onClose, onSave }) {
             </button>
           </div>
 
+          {/* Color Picker */}
+          <div>
+            <label
+              className="form-label"
+              style={{ marginBottom: 8, display: 'block' }}
+            >
+              Card Color
+            </label>
+            <div
+              style={{
+                display: 'flex',
+                gap: 8,
+                flexWrap: 'wrap',
+                alignItems: 'center',
+              }}
+            >
+              {COLORS.map((pc) => (
+                <div
+                  key={pc.key}
+                  onClick={() => setColor(pc.bg)}
+                  title={pc.label}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 7,
+                    background: pc.bg,
+                    border:
+                      color === pc.bg
+                        ? '2.5px solid ' + pc.accent
+                        : '2px solid transparent',
+                    cursor: 'pointer',
+                    boxShadow:
+                      color === pc.bg
+                        ? '0 0 0 2px ' + pc.accent + '44'
+                        : 'none',
+                    transition: 'all 0.15s',
+                    outline: '1px solid #ddd',
+                  }}
+                />
+              ))}
+              <div style={{ position: 'relative', width: 28, height: 28 }}>
+                <input
+                  type="color"
+                  value={customColor}
+                  onChange={(e) => {
+                    setCustomColor(e.target.value);
+                    setColor(e.target.value);
+                  }}
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 7,
+                    border: !COLORS.find((pc) => pc.bg === color)
+                      ? '2.5px solid #555'
+                      : '1px solid #ddd',
+                    cursor: 'pointer',
+                    padding: 0,
+                    background: 'none',
+                  }}
+                  title="Custom color"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Divider */}
           <div style={{ borderTop: '1px dashed var(--border)', margin: '0' }} />
 
@@ -399,12 +478,11 @@ function TipModal({ initial, type, onClose, onSave }) {
 }
 
 // ── Expandable Item Row ──
-function ExpandableRow({ item, accent }) {
-  const [open, setOpen] = useState(false);
+function ExpandableRow({ item, accent, open, onToggle }) {
   return (
     <div style={{ borderBottom: '1px solid var(--border-light)' }}>
       <div
-        onClick={() => setOpen((p) => !p)}
+        onClick={onToggle}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -423,9 +501,10 @@ function ExpandableRow({ item, accent }) {
           style={{
             width: 8,
             height: 8,
-            borderRadius: '50%',
             background: accent,
             flexShrink: 0,
+            transform: 'rotate(45deg)',
+            borderRadius: 2,
           }}
         />
         <span
@@ -473,9 +552,12 @@ function ExpandableRow({ item, accent }) {
 
 // ── Tip Card ──
 function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
-  const accent = type === 'sunnah' ? 'var(--purple)' : 'var(--accent)';
-  const accentBg = type === 'sunnah' ? 'var(--purple-bg)' : 'var(--accent-bg)';
   const icon = type === 'sunnah' ? '🌙' : '💡';
+  const rawColor = tip.color || COLORS[0].bg;
+  const presetDef = COLORS.find((c) => c.bg === rawColor || c.key === rawColor);
+  const accentBg = presetDef ? presetDef.bg : rawColor;
+  const accent = presetDef ? presetDef.accent : '#444';
+  const [openIndex, setOpenIndex] = useState(null);
 
   const hasNumbered = tip.numberedItems && tip.numberedItems.length > 0;
   const hasExpandable = tip.expandableItems && tip.expandableItems.length > 0;
@@ -495,10 +577,12 @@ function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
         transition: 'var(--transition)',
       }}
     >
+      {/* Color bar */}
+      <div style={{ height: 4, background: accent }} />
       {/* Header */}
       <div
         style={{
-          background: accentBg,
+          background: 'var(--bg-card)',
           borderBottom: '1px solid var(--border)',
           padding: '13px 16px',
           display: 'flex',
@@ -559,7 +643,7 @@ function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
               fontSize: 9,
               fontWeight: 700,
               color: accent,
-              background: accentBg,
+              background: 'var(--bg-card)',
               border: '1px solid ' + accent,
               borderRadius: 999,
               padding: '2px 7px',
@@ -746,7 +830,8 @@ function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
                 key={i}
                 item={item}
                 accent={accent}
-                isLast={i === tip.expandableItems.length - 1}
+                open={openIndex === i}
+                onToggle={() => setOpenIndex(openIndex === i ? null : i)}
               />
             ))}
           </div>

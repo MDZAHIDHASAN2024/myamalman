@@ -13,6 +13,7 @@ const tipSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
     type: { type: String, enum: ['tips', 'sunnah'], required: true },
+    color: { type: String, default: 'green' },
     items: [{ text: { type: String, trim: true } }], // legacy — রাখা হয়েছে পুরনো data এর জন্য
     numberedItems: [numberedItemSchema],
     expandableItems: [expandableItemSchema],

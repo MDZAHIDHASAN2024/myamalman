@@ -25,7 +25,8 @@ const getAll = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const { title, type, items, numberedItems, expandableItems } = req.body;
+    const { title, type, items, numberedItems, expandableItems, color } =
+      req.body;
 
     if (!title || !type) {
       return res
@@ -47,6 +48,7 @@ const create = async (req, res) => {
     const tip = await Tip.create({
       title,
       type,
+      color: color || 'green',
       items: items || [],
       numberedItems: numberedItems || [],
       expandableItems: expandableItems || [],
@@ -73,6 +75,7 @@ const update = async (req, res) => {
     }
 
     if (req.body.title) tip.title = req.body.title;
+    if (req.body.color) tip.color = req.body.color;
     if (req.body.items) tip.items = req.body.items;
     if (req.body.numberedItems !== undefined)
       tip.numberedItems = req.body.numberedItems;
