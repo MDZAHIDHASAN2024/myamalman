@@ -9,11 +9,14 @@ const getAll = async (req, res) => {
       query.$or = [
         { title: { $regex: search, $options: 'i' } },
         { 'items.text': { $regex: search, $options: 'i' } },
+        { 'numberedItems.text': { $regex: search, $options: 'i' } },
+        { 'expandableItems.title': { $regex: search, $options: 'i' } },
+        { 'expandableItems.detail': { $regex: search, $options: 'i' } },
       ];
     }
     const tips = await Tip.find(query)
       .populate('createdBy', 'name')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: 1 });
     res.json({ success: true, data: tips });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -22,18 +25,34 @@ const getAll = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const { title, type, items } = req.body;
-    if (!title || !type || !items || !items.length) {
+    const { title, type, items, numberedItems, expandableItems } = req.body;
+
+    if (!title || !type) {
       return res
         .status(400)
-        .json({ success: false, message: 'title, type, items required' });
+        .json({ success: false, message: 'title এবং type দিন' });
     }
+
+    const hasItems =
+      (items && items.length) ||
+      (numberedItems && numberedItems.length) ||
+      (expandableItems && expandableItems.length);
+
+    if (!hasItems) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'কমপক্ষে ১টা item দিন' });
+    }
+
     const tip = await Tip.create({
       title,
       type,
-      items,
+      items: items || [],
+      numberedItems: numberedItems || [],
+      expandableItems: expandableItems || [],
       createdBy: req.user._id,
     });
+
     await tip.populate('createdBy', 'name');
     res.status(201).json({ success: true, data: tip });
   } catch (err) {
@@ -55,6 +74,11 @@ const update = async (req, res) => {
 
     if (req.body.title) tip.title = req.body.title;
     if (req.body.items) tip.items = req.body.items;
+    if (req.body.numberedItems !== undefined)
+      tip.numberedItems = req.body.numberedItems;
+    if (req.body.expandableItems !== undefined)
+      tip.expandableItems = req.body.expandableItems;
+
     await tip.save();
     await tip.populate('createdBy', 'name');
     res.json({ success: true, data: tip });

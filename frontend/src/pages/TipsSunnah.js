@@ -82,39 +82,87 @@ function DeleteModal({ tip, onConfirm, onClose, deleting }) {
 // ── Add/Edit Modal ──
 function TipModal({ initial, type, onClose, onSave }) {
   const [title, setTitle] = useState(initial?.title || '');
-  const [items, setItems] = useState(
-    initial?.items?.map((i) => i.text) || [''],
+
+  // numbered items: { text }
+  const [numberedItems, setNumberedItems] = useState(
+    initial?.numberedItems?.map((i) => i.text) || [''],
   );
+
+  // expandable items: { title, detail }
+  const [expandableItems, setExpandableItems] = useState(
+    initial?.expandableItems?.map((i) => ({
+      title: i.title,
+      detail: i.detail,
+    })) || [{ title: '', detail: '' }],
+  );
+
   const [saving, setSaving] = useState(false);
 
-  const updateItem = (i, val) => {
-    const updated = [...items];
+  // Numbered item handlers
+  const updateNumbered = (i, val) => {
+    const updated = [...numberedItems];
     updated[i] = val;
-    setItems(updated);
+    setNumberedItems(updated);
   };
-  const addItem = () => setItems((prev) => [...prev, '']);
-  const removeItem = (i) =>
-    setItems((prev) => prev.filter((_, idx) => idx !== i));
+  const addNumbered = () => setNumberedItems((prev) => [...prev, '']);
+  const removeNumbered = (i) =>
+    setNumberedItems((prev) => prev.filter((_, idx) => idx !== i));
+
+  // Expandable item handlers
+  const updateExpandable = (i, field, val) => {
+    const updated = [...expandableItems];
+    updated[i] = { ...updated[i], [field]: val };
+    setExpandableItems(updated);
+  };
+  const addExpandable = () =>
+    setExpandableItems((prev) => [...prev, { title: '', detail: '' }]);
+  const removeExpandable = (i) =>
+    setExpandableItems((prev) => prev.filter((_, idx) => idx !== i));
 
   const handleSave = async () => {
     if (!title.trim()) return toast.error('Heading দিন');
-    const filtered = items.filter((t) => t.trim());
-    if (!filtered.length) return toast.error('কমপক্ষে ১টা item দিন');
+    const filteredNumbered = numberedItems.filter((t) => t.trim());
+    const filteredExpandable = expandableItems.filter((e) => e.title.trim());
+    if (!filteredNumbered.length && !filteredExpandable.length)
+      return toast.error('কমপক্ষে ১টা item দিন');
+
     setSaving(true);
     await onSave({
       title: title.trim(),
       type,
-      items: filtered.map((text) => ({ text })),
+      numberedItems: filteredNumbered.map((text) => ({ text })),
+      expandableItems: filteredExpandable.map((e) => ({
+        title: e.title.trim(),
+        detail: e.detail.trim(),
+      })),
     });
     setSaving(false);
   };
+
+  const inputStyle = { flex: 1 };
+  const removeBtn = (onClick) => (
+    <button
+      onClick={onClick}
+      style={{
+        background: 'var(--danger-bg)',
+        border: 'none',
+        borderRadius: 6,
+        padding: '6px 10px',
+        cursor: 'pointer',
+        color: 'var(--danger)',
+        fontSize: 14,
+      }}
+    >
+      ✕
+    </button>
+  );
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div
         className="modal"
         onClick={(e) => e.stopPropagation()}
-        style={{ maxWidth: 500 }}
+        style={{ maxWidth: 520 }}
       >
         <div className="card-header">
           <span className="title">
@@ -133,22 +181,54 @@ function TipModal({ initial, type, onClose, onSave }) {
             ×
           </button>
         </div>
+
         <div
           className="card-body"
-          style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16,
+            maxHeight: '70vh',
+            overflowY: 'auto',
+          }}
         >
+          {/* Heading */}
           <div className="form-group" style={{ marginBottom: 0 }}>
             <label className="form-label">Heading</label>
             <input
               className="form-control"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="হেডিং এড করুন "
+              placeholder="হেডিং এড করুন"
             />
           </div>
+
+          {/* Numbered Items */}
           <div>
-            <label className="form-label">Items</label>
-            {items.map((item, i) => (
+            <label
+              className="form-label"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                marginBottom: 8,
+              }}
+            >
+              <span
+                style={{
+                  background: 'var(--accent)',
+                  color: 'white',
+                  borderRadius: 6,
+                  padding: '1px 8px',
+                  fontSize: 11,
+                  fontWeight: 700,
+                }}
+              >
+                1, 2, 3
+              </span>
+              Numbered Items
+            </label>
+            {numberedItems.map((item, i) => (
               <div
                 key={i}
                 style={{
@@ -171,36 +251,128 @@ function TipModal({ initial, type, onClose, onSave }) {
                 <input
                   className="form-control"
                   value={item}
-                  onChange={(e) => updateItem(i, e.target.value)}
+                  onChange={(e) => updateNumbered(i, e.target.value)}
                   placeholder={'Item ' + (i + 1)}
-                  style={{ flex: 1 }}
+                  style={inputStyle}
                 />
-                {items.length > 1 && (
-                  <button
-                    onClick={() => removeItem(i)}
-                    style={{
-                      background: 'var(--danger-bg)',
-                      border: 'none',
-                      borderRadius: 6,
-                      padding: '6px 10px',
-                      cursor: 'pointer',
-                      color: 'var(--danger)',
-                      fontSize: 14,
-                    }}
-                  >
-                    ✕
-                  </button>
-                )}
+                {numberedItems.length > 1 && removeBtn(() => removeNumbered(i))}
               </div>
             ))}
             <button
-              onClick={addItem}
+              onClick={addNumbered}
               className="btn btn-secondary btn-sm"
-              style={{ marginTop: 4 }}
+              style={{ marginTop: 2 }}
             >
-              + Item যোগ করুন
+              + Numbered item যোগ করুন
             </button>
           </div>
+
+          {/* Divider */}
+          <div style={{ borderTop: '1px dashed var(--border)', margin: '0' }} />
+
+          {/* Expandable Items */}
+          <div>
+            <label
+              className="form-label"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                marginBottom: 8,
+              }}
+            >
+              <span
+                style={{
+                  background: 'var(--purple, #7C3AED)',
+                  color: 'white',
+                  borderRadius: 6,
+                  padding: '1px 8px',
+                  fontSize: 11,
+                  fontWeight: 700,
+                }}
+              >
+                ▶
+              </span>
+              Expandable Items (click করলে detail দেখা যাবে)
+            </label>
+            {expandableItems.map((item, i) => (
+              <div
+                key={i}
+                style={{
+                  background: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 10,
+                  padding: '10px 12px',
+                  marginBottom: 8,
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: 8,
+                    alignItems: 'center',
+                    marginBottom: 6,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: 'var(--text-muted)',
+                      minWidth: 28,
+                    }}
+                  >
+                    Title
+                  </span>
+                  <input
+                    className="form-control"
+                    value={item.title}
+                    onChange={(e) =>
+                      updateExpandable(i, 'title', e.target.value)
+                    }
+                    placeholder="Item এর title"
+                    style={{ flex: 1 }}
+                  />
+                  {expandableItems.length > 1 &&
+                    removeBtn(() => removeExpandable(i))}
+                </div>
+                <div
+                  style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}
+                >
+                  <span
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: 'var(--text-muted)',
+                      minWidth: 28,
+                      paddingTop: 9,
+                    }}
+                  >
+                    Detail
+                  </span>
+                  <textarea
+                    className="form-control"
+                    value={item.detail}
+                    onChange={(e) =>
+                      updateExpandable(i, 'detail', e.target.value)
+                    }
+                    placeholder="বিস্তারিত লিখুন (optional)"
+                    rows={2}
+                    style={{ flex: 1, resize: 'vertical', minHeight: 56 }}
+                  />
+                </div>
+              </div>
+            ))}
+            <button
+              onClick={addExpandable}
+              className="btn btn-secondary btn-sm"
+              style={{ marginTop: 2 }}
+            >
+              + Expandable item যোগ করুন
+            </button>
+          </div>
+
+          {/* Actions */}
           <div
             style={{
               display: 'flex',
@@ -226,11 +398,90 @@ function TipModal({ initial, type, onClose, onSave }) {
   );
 }
 
+// ── Expandable Item Row ──
+function ExpandableRow({ item, accent }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ borderBottom: '1px solid var(--border-light)' }}>
+      <div
+        onClick={() => setOpen((p) => !p)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '9px 16px',
+          cursor: 'pointer',
+          userSelect: 'none',
+          transition: 'background 0.15s',
+        }}
+        onMouseEnter={(e) =>
+          (e.currentTarget.style.background = 'var(--bg-tertiary)')
+        }
+        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+      >
+        <div
+          style={{
+            width: 8,
+            height: 8,
+            borderRadius: '50%',
+            background: accent,
+            flexShrink: 0,
+          }}
+        />
+        <span
+          style={{
+            fontSize: 13,
+            color: 'var(--text-primary)',
+            flex: 1,
+            lineHeight: 1.55,
+            wordBreak: 'break-word',
+          }}
+        >
+          {item.title}
+        </span>
+        <span
+          style={{
+            fontSize: 10,
+            color: accent,
+            transition: 'transform 0.2s',
+            transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+            flexShrink: 0,
+            display: 'inline-block',
+          }}
+        >
+          ▶
+        </span>
+      </div>
+      {open && item.detail && (
+        <div
+          style={{
+            padding: '0 16px 10px 34px',
+            fontSize: 12,
+            color: 'var(--text-secondary)',
+            lineHeight: 1.75,
+            borderLeft: `3px solid ${accent}`,
+            marginLeft: 16,
+            marginBottom: 6,
+          }}
+        >
+          {item.detail}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Tip Card ──
 function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
   const accent = type === 'sunnah' ? 'var(--purple)' : 'var(--accent)';
   const accentBg = type === 'sunnah' ? 'var(--purple-bg)' : 'var(--accent-bg)';
   const icon = type === 'sunnah' ? '🌙' : '💡';
+
+  const hasNumbered = tip.numberedItems && tip.numberedItems.length > 0;
+  const hasExpandable = tip.expandableItems && tip.expandableItems.length > 0;
+
+  // fallback: support old `items` field if new fields not present
+  const legacyItems = !hasNumbered && !hasExpandable && tip.items;
 
   return (
     <div
@@ -352,61 +603,159 @@ function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
         </div>
       </div>
 
-      {/* Items */}
-      <div
-        style={{
-          padding: '14px 16px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 0,
-        }}
-      >
-        {tip.items.map((item, i) => (
+      {/* Legacy items fallback */}
+      {legacyItems && (
+        <div
+          style={{
+            padding: '14px 16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 0,
+          }}
+        >
+          {tip.items.map((item, i) => (
+            <div
+              key={i}
+              style={{
+                display: 'flex',
+                gap: 12,
+                alignItems: 'flex-start',
+                padding: '9px 0',
+                borderBottom:
+                  i < tip.items.length - 1
+                    ? '1px solid var(--border-light)'
+                    : 'none',
+              }}
+            >
+              <div
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 7,
+                  background: accent,
+                  color: 'white',
+                  fontWeight: 800,
+                  fontSize: 11,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  marginTop: 1,
+                }}
+              >
+                {i + 1}
+              </div>
+              <span
+                style={{
+                  fontSize: 13,
+                  color: 'var(--text-primary)',
+                  lineHeight: 1.65,
+                  flex: 1,
+                  wordBreak: 'break-word',
+                }}
+              >
+                {item.text}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Numbered Items Section */}
+      {hasNumbered && (
+        <>
           <div
-            key={i}
             style={{
-              display: 'flex',
-              gap: 12,
-              alignItems: 'flex-start',
-              padding: '9px 0',
-              borderBottom:
-                i < tip.items.length - 1
-                  ? '1px solid var(--border-light)'
-                  : 'none',
+              fontSize: 10,
+              fontWeight: 700,
+              color: 'var(--text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              padding: '8px 16px 4px',
+              borderBottom: '1px solid var(--border-light)',
             }}
           >
-            <div
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: 7,
-                background: accent,
-                color: 'white',
-                fontWeight: 800,
-                fontSize: 11,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                marginTop: 1,
-              }}
-            >
-              {i + 1}
-            </div>
-            <span
-              style={{
-                fontSize: 13,
-                color: 'var(--text-primary)',
-                lineHeight: 1.65,
-                flex: 1,
-                wordBreak: 'break-word',
-              }}
-            >
-              {item.text}
-            </span>
+            📌 numbered items
           </div>
-        ))}
-      </div>
+          <div style={{ padding: '6px 0' }}>
+            {tip.numberedItems.map((item, i) => (
+              <div
+                key={i}
+                style={{
+                  display: 'flex',
+                  gap: 12,
+                  alignItems: 'flex-start',
+                  padding: '8px 16px',
+                  borderBottom:
+                    i < tip.numberedItems.length - 1
+                      ? '1px solid var(--border-light)'
+                      : 'none',
+                }}
+              >
+                <div
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 7,
+                    background: accent,
+                    color: 'white',
+                    fontWeight: 800,
+                    fontSize: 11,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    marginTop: 1,
+                  }}
+                >
+                  {i + 1}
+                </div>
+                <span
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--text-primary)',
+                    lineHeight: 1.65,
+                    flex: 1,
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {item.text}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Expandable Items Section */}
+      {hasExpandable && (
+        <>
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: 'var(--text-muted)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              padding: '8px 16px 4px',
+              borderTop: hasNumbered ? '1px solid var(--border)' : 'none',
+              borderBottom: '1px solid var(--border-light)',
+            }}
+          >
+            📖 expandable items
+          </div>
+          <div>
+            {tip.expandableItems.map((item, i) => (
+              <ExpandableRow
+                key={i}
+                item={item}
+                accent={accent}
+                isLast={i === tip.expandableItems.length - 1}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
       {/* Footer */}
       <div
@@ -422,7 +771,10 @@ function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
         <span
           style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}
         >
-          {tip.items.length} টি item
+          {(hasNumbered ? tip.numberedItems.length : 0) +
+            (hasExpandable ? tip.expandableItems.length : 0) ||
+            (legacyItems ? tip.items.length : 0)}{' '}
+          টি item
         </span>
         <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>
           {new Date(tip.createdAt).toLocaleDateString('bn-BD')}
@@ -439,13 +791,27 @@ export default function TipsSunnah() {
 
   const [activeTab, setActiveTab] = useState('tips');
   const [tips, setTips] = useState([]);
+  const [counts, setCounts] = useState({ tips: 0, sunnah: 0 });
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editTarget, setEditTarget] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null); // delete confirm
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
+
+  const loadCounts = useCallback(async () => {
+    try {
+      const [tipsRes, sunnahRes] = await Promise.all([
+        API.get('/tips?type=tips'),
+        API.get('/tips?type=sunnah'),
+      ]);
+      setCounts({
+        tips: (tipsRes.data.data || []).length,
+        sunnah: (sunnahRes.data.data || []).length,
+      });
+    } catch (_) {}
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -464,6 +830,9 @@ export default function TipsSunnah() {
   useEffect(() => {
     load();
   }, [load]);
+  useEffect(() => {
+    loadCounts();
+  }, [loadCounts]);
 
   useEffect(() => {
     const t = setTimeout(() => setSearch(searchInput), 400);
@@ -482,6 +851,7 @@ export default function TipsSunnah() {
       setShowModal(false);
       setEditTarget(null);
       load();
+      loadCounts();
     } catch (err) {
       toast.error('সেভ failed');
     }
@@ -495,6 +865,7 @@ export default function TipsSunnah() {
       toast.success('Delete হয়েছে');
       setDeleteTarget(null);
       load();
+      loadCounts();
     } catch (err) {
       toast.error('Delete failed');
     } finally {
@@ -530,7 +901,7 @@ export default function TipsSunnah() {
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
                 style={{
-                  padding: '7px 22px',
+                  padding: '7px 16px',
                   borderRadius: 8,
                   border: 'none',
                   cursor: 'pointer',
@@ -544,9 +915,30 @@ export default function TipsSunnah() {
                   color:
                     activeTab === tab.key ? 'white' : 'var(--text-secondary)',
                   transition: 'all 0.15s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 7,
                 }}
               >
                 {tab.label}
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 800,
+                    background:
+                      activeTab === tab.key
+                        ? 'rgba(255,255,255,0.25)'
+                        : 'var(--border)',
+                    color:
+                      activeTab === tab.key ? 'white' : 'var(--text-muted)',
+                    borderRadius: 999,
+                    padding: '1px 7px',
+                    minWidth: 22,
+                    textAlign: 'center',
+                  }}
+                >
+                  {counts[tab.key]}
+                </span>
               </button>
             ))}
           </div>
