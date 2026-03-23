@@ -101,11 +101,8 @@ export default function Dashboard() {
     { key: 'isha', label: 'ইশা', emoji: '🌙' },
   ];
 
-  // Exercise display
   const exMin = stats?.todayAmal?.exerciseMinutes || 0;
   const exDisplay = exMin > 0 ? `${(exMin / 60).toFixed(1)}h` : '—';
-
-  // Total exercise across all days (from stats if available, else today only)
   const totalExMin = stats?.totalExerciseMinutes || 0;
   const totalExDisplay =
     totalExMin > 0 ? `${(totalExMin / 60).toFixed(1)}h` : '—';
@@ -215,12 +212,6 @@ export default function Dashboard() {
         {[
           { icon: '📅', value: stats?.totalDays || 0, label: 'মোট দিন' },
           {
-            icon: '🔥',
-            value: stats?.streak || 0,
-            label: 'Streak',
-            color: '#f59e0b',
-          },
-          {
             icon: '📈',
             value: `${stats?.avgProgress || 0}%`,
             label: 'গড় Score',
@@ -299,7 +290,6 @@ export default function Dashboard() {
               })}
             </div>
 
-            {/* Today exercise & sleep inline */}
             {stats?.todayAmal &&
               (exMin > 0 || stats.todayAmal.sleepMinutes > 0) && (
                 <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
@@ -388,6 +378,7 @@ export default function Dashboard() {
                 ✏️ আজকের আমল পোস্ট করুন
               </a>
             )}
+
             {stats?.todayAmal && (
               <div style={{ marginTop: 12 }}>
                 <div
@@ -416,7 +407,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Salah consistency */}
+        {/* Salah Consistency */}
         <div className="card">
           <div className="card-header">
             <span className="title">📊 নামাজের ধারাবাহিকতা</span>

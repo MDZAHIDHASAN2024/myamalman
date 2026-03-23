@@ -451,7 +451,7 @@ export default function AuthPage() {
             </button>
           </p>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
-            Developed by Zahid Hasan • v1.0.0
+            Developed by Zahid Hasan • v0.1.0
           </p>
         </div>
       </div>
