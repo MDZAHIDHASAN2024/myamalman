@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import {
   formatDate,
   getTodayStr,
-  useHijriDisplay, // ← real-time hook
+  useHijriDisplay,
   getBDWeekday,
   getTodayHijriDay,
 } from '../utils/hijri';
@@ -15,7 +15,6 @@ function getTodayAlerts() {
   const alerts = [];
   const weekday = getBDWeekday();
   const hijriDay = getTodayHijriDay();
-
   if (weekday === 0)
     alerts.push({
       type: 'monday_sunnah',
@@ -46,7 +45,6 @@ function getTodayAlerts() {
       label: 'আইয়্যামুল বীয ১৫',
       message: 'আগামীকাল হিজরী ১৫ তারিখ — আইয়্যামুল বীয রোজা',
     });
-
   return alerts;
 }
 
@@ -54,15 +52,14 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [dismissed, setDismissed] = useState([]); // in-memory: refresh এ reset
+  const [dismissed, setDismissed] = useState([]);
 
-  const hijri = useHijriDisplay(); // ← real-time, Maghrib এ auto update
+  const hijri = useHijriDisplay();
   const todayStr = getTodayStr();
   const todayFormatted = formatDate(todayStr);
 
   const todayAlerts = getTodayAlerts();
   const visibleAlerts = todayAlerts.filter((a) => !dismissed.includes(a.type));
-
   const dismissAlert = (type) => setDismissed((prev) => [...prev, type]);
 
   const loadData = useCallback(() => {
@@ -103,6 +100,15 @@ export default function Dashboard() {
     { key: 'maghrib', label: 'মাগরিব', emoji: '🌇' },
     { key: 'isha', label: 'ইশা', emoji: '🌙' },
   ];
+
+  // Exercise display
+  const exMin = stats?.todayAmal?.exerciseMinutes || 0;
+  const exDisplay = exMin > 0 ? `${(exMin / 60).toFixed(1)}h` : '—';
+
+  // Total exercise across all days (from stats if available, else today only)
+  const totalExMin = stats?.totalExerciseMinutes || 0;
+  const totalExDisplay =
+    totalExMin > 0 ? `${(totalExMin / 60).toFixed(1)}h` : '—';
 
   return (
     <Layout title="Dashboard">
@@ -230,6 +236,7 @@ export default function Dashboard() {
             value: `৳${stats?.totalSadaqah || 0}`,
             label: 'সাদাকাহ',
           },
+          { icon: '💪', value: totalExDisplay, label: 'ব্যায়াম' },
         ].map((s) => (
           <div className="stat-card" key={s.label}>
             <div className="stat-icon">{s.icon}</div>
@@ -245,6 +252,7 @@ export default function Dashboard() {
       </div>
 
       <div className="grid-2 mb-3">
+        {/* Today's Salah */}
         <div className="card">
           <div className="card-header">
             <span className="title">🕌 আজকের নামাজ</span>
@@ -290,6 +298,76 @@ export default function Dashboard() {
                 );
               })}
             </div>
+
+            {/* Today exercise & sleep inline */}
+            {stats?.todayAmal &&
+              (exMin > 0 || stats.todayAmal.sleepMinutes > 0) && (
+                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                  {exMin > 0 && (
+                    <div
+                      style={{
+                        flex: 1,
+                        background: 'var(--accent-bg)',
+                        borderRadius: 8,
+                        padding: '7px 10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 7,
+                      }}
+                    >
+                      <span style={{ fontSize: 16 }}>💪</span>
+                      <div>
+                        <div
+                          style={{ fontSize: 11, color: 'var(--text-muted)' }}
+                        >
+                          ব্যায়াম
+                        </div>
+                        <div
+                          style={{
+                            fontWeight: 800,
+                            fontSize: 13,
+                            color: 'var(--accent)',
+                          }}
+                        >
+                          {exDisplay}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {stats.todayAmal.sleepMinutes > 0 && (
+                    <div
+                      style={{
+                        flex: 1,
+                        background: 'var(--bg-tertiary)',
+                        borderRadius: 8,
+                        padding: '7px 10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 7,
+                      }}
+                    >
+                      <span style={{ fontSize: 16 }}>😴</span>
+                      <div>
+                        <div
+                          style={{ fontSize: 11, color: 'var(--text-muted)' }}
+                        >
+                          ঘুম
+                        </div>
+                        <div
+                          style={{
+                            fontWeight: 800,
+                            fontSize: 13,
+                            color: 'var(--text-primary)',
+                          }}
+                        >
+                          {(stats.todayAmal.sleepMinutes / 60).toFixed(1)}h
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
             {!stats?.todayAmal && (
               <a
                 href="/amal-post"
@@ -338,6 +416,7 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Salah consistency */}
         <div className="card">
           <div className="card-header">
             <span className="title">📊 নামাজের ধারাবাহিকতা</span>
@@ -382,6 +461,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Best Day */}
       {stats?.bestDay && (
         <div className="card">
           <div className="card-header">

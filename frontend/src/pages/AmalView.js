@@ -45,7 +45,7 @@ const FASTING_LABELS = {
   '': '',
 };
 
-// ── Delete Confirmation Modal ──
+// ── Delete Modal ──
 function DeleteModal({ target, onConfirm, onCancel, loading }) {
   if (!target) return null;
   return (
@@ -199,7 +199,7 @@ function DeleteModal({ target, onConfirm, onCancel, loading }) {
   );
 }
 
-// ── Score Circle ──
+// ── Score Badge ──
 const ScoreBadge = ({ score }) => {
   const color =
     score >= 70
@@ -263,6 +263,10 @@ function sumRows(rows) {
     sadaqah: rows.filter((r) => r.sadaqah).length,
     sadaqahAmount: rows.reduce((s, r) => s + (r.sadaqahAmount || 0), 0),
     foodPlatesTotal: rows.reduce((s, r) => s + (r.foodPlates || 0), 0),
+    exerciseMinutesTotal: rows.reduce(
+      (s, r) => s + (r.exerciseMinutes || 0),
+      0,
+    ),
     sleepAvg: rows.filter((r) => r.sleepMinutes > 0).length
       ? Math.round(
           rows
@@ -389,6 +393,12 @@ const SumRow = ({ s, label, labelColor, isGrand }) => {
       {td(s.foodPlatesTotal > 0 ? `${s.foodPlatesTotal}p` : '—', {
         color: 'var(--info)',
       })}
+      {td(
+        s.exerciseMinutesTotal > 0
+          ? `${(s.exerciseMinutesTotal / 60).toFixed(1)}h`
+          : '—',
+        { color: 'var(--accent)' },
+      )}
       {td(s.sleepAvg > 0 ? `${(s.sleepAvg / 60).toFixed(1)}h` : '—')}
       {td(`${s.avgScore}%`, {
         color: scoreColor,
@@ -471,6 +481,16 @@ const AmalCard = ({ row, onView, onDelete }) => (
           💝 ৳{row.sadaqahAmount}
         </span>
       )}
+      {row.foodPlates > 0 && (
+        <span className="badge badge-info" style={{ fontSize: 10 }}>
+          🍽️ {row.foodPlates}p
+        </span>
+      )}
+      {row.exerciseMinutes > 0 && (
+        <span className="badge badge-success" style={{ fontSize: 10 }}>
+          💪 {(row.exerciseMinutes / 60).toFixed(1)}h
+        </span>
+      )}
       {row.sleepMinutes > 0 && (
         <span
           className="badge"
@@ -481,11 +501,6 @@ const AmalCard = ({ row, onView, onDelete }) => (
           }}
         >
           😴 {(row.sleepMinutes / 60).toFixed(1)}h
-        </span>
-      )}
-      {row.foodPlates > 0 && (
-        <span className="badge badge-info" style={{ fontSize: 10 }}>
-          🍽️ {row.foodPlates}p
         </span>
       )}
     </div>
@@ -563,6 +578,13 @@ const MobileMonthCard = ({ ym, rows }) => {
               s.foodPlatesTotal > 0 ? `${s.foodPlatesTotal}p` : '—',
               'var(--info)',
             ],
+            [
+              '💪 ব্যায়াম',
+              s.exerciseMinutesTotal > 0
+                ? `${(s.exerciseMinutesTotal / 60).toFixed(1)}h`
+                : '—',
+              'var(--accent)',
+            ],
             ['💝 সাদাকাহ', `৳${s.sadaqahAmount}`, 'var(--accent)'],
           ].map(([label, val, color]) => (
             <div
@@ -605,7 +627,6 @@ export default function AmalView() {
   const [selected, setSelected] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
-  const LIMIT = parseInt(localStorage.getItem('amal_rows_per_page') || '31');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -662,7 +683,6 @@ export default function AmalView() {
 
   const grouped = groupByMonth(allData);
   const grandTotal = sumRows(allData);
-
   const filterLabel =
     filters.startDate && filters.endDate
       ? `${formatDate(filters.startDate)} — ${formatDate(filters.endDate)}`
@@ -839,7 +859,8 @@ export default function AmalView() {
               <col style={{ width: 56 }} />
               <col style={{ width: 64 }} />
               <col style={{ width: 68 }} />
-              <col style={{ width: 56 }} />
+              <col style={{ width: 52 }} />
+              <col style={{ width: 52 }} />
               <col style={{ width: 48 }} />
               <col style={{ width: 52 }} />
               <col style={{ width: 70 }} />
@@ -847,160 +868,36 @@ export default function AmalView() {
             <thead>
               <tr>
                 <th style={{ fontSize: 11, padding: '9px 8px' }}>তারিখ</th>
-                <th
-                  style={{
-                    fontSize: 11,
-                    padding: '9px 4px',
-                    textAlign: 'center',
-                  }}
-                >
-                  🌅
-                  <br />
-                  ফজর
-                </th>
-                <th
-                  style={{
-                    fontSize: 11,
-                    padding: '9px 4px',
-                    textAlign: 'center',
-                  }}
-                >
-                  ☀️
-                  <br />
-                  যোহর
-                </th>
-                <th
-                  style={{
-                    fontSize: 11,
-                    padding: '9px 4px',
-                    textAlign: 'center',
-                  }}
-                >
-                  🌤️
-                  <br />
-                  আসর
-                </th>
-                <th
-                  style={{
-                    fontSize: 11,
-                    padding: '9px 4px',
-                    textAlign: 'center',
-                  }}
-                >
-                  🌇
-                  <br />
-                  মাগরিব
-                </th>
-                <th
-                  style={{
-                    fontSize: 11,
-                    padding: '9px 4px',
-                    textAlign: 'center',
-                  }}
-                >
-                  🌙
-                  <br />
-                  ইশা
-                </th>
-                <th
-                  style={{
-                    fontSize: 11,
-                    padding: '9px 4px',
-                    textAlign: 'center',
-                  }}
-                >
-                  🌌
-                  <br />
-                  তাহাজ্জুদ
-                </th>
-                <th
-                  style={{
-                    fontSize: 11,
-                    padding: '9px 4px',
-                    textAlign: 'center',
-                  }}
-                >
-                  🌄
-                  <br />
-                  সকাল
-                </th>
-                <th
-                  style={{
-                    fontSize: 11,
-                    padding: '9px 4px',
-                    textAlign: 'center',
-                  }}
-                >
-                  🤲
-                  <br />
-                  তওবা
-                </th>
-                <th
-                  style={{
-                    fontSize: 11,
-                    padding: '9px 4px',
-                    textAlign: 'center',
-                  }}
-                >
-                  🌆
-                  <br />
-                  সন্ধ্যা
-                </th>
-                <th
-                  style={{
-                    fontSize: 11,
-                    padding: '9px 4px',
-                    textAlign: 'center',
-                  }}
-                >
-                  📖
-                  <br />
-                  কুরআন
-                </th>
-                <th
-                  style={{
-                    fontSize: 11,
-                    padding: '9px 4px',
-                    textAlign: 'center',
-                  }}
-                >
-                  🌙
-                  <br />
-                  রোজা
-                </th>
-                <th
-                  style={{
-                    fontSize: 11,
-                    padding: '9px 4px',
-                    textAlign: 'center',
-                  }}
-                >
-                  💝
-                  <br />
-                  সাদাকাহ
-                </th>
-                <th
-                  style={{
-                    fontSize: 11,
-                    padding: '9px 4px',
-                    textAlign: 'center',
-                  }}
-                >
-                  🍽️
-                  <br />
-                  প্লেট
-                </th>
-                <th
-                  style={{
-                    fontSize: 11,
-                    padding: '9px 4px',
-                    textAlign: 'center',
-                  }}
-                >
-                  😴
-                  <br />
-                  ঘুম
-                </th>
+                {[
+                  ['🌅', 'ফজর'],
+                  ['☀️', 'যোহর'],
+                  ['🌤️', 'আসর'],
+                  ['🌇', 'মাগরিব'],
+                  ['🌙', 'ইশা'],
+                  ['🌌', 'তাহাজ্জুদ'],
+                  ['🌄', 'সকাল'],
+                  ['🤲', 'তওবা'],
+                  ['🌆', 'সন্ধ্যা'],
+                  ['📖', 'কুরআন'],
+                  ['🌙', 'রোজা'],
+                  ['💝', 'সাদাকাহ'],
+                  ['🍽️', 'প্লেট'],
+                  ['💪', 'ব্যায়াম'],
+                  ['😴', 'ঘুম'],
+                ].map(([em, label]) => (
+                  <th
+                    key={label}
+                    style={{
+                      fontSize: 11,
+                      padding: '9px 4px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {em}
+                    <br />
+                    {label}
+                  </th>
+                ))}
                 <th
                   style={{
                     fontSize: 11,
@@ -1025,7 +922,7 @@ export default function AmalView() {
               {loading ? (
                 <tr>
                   <td
-                    colSpan={17}
+                    colSpan={18}
                     style={{
                       textAlign: 'center',
                       padding: 50,
@@ -1037,7 +934,7 @@ export default function AmalView() {
                 </tr>
               ) : allData.length === 0 ? (
                 <tr>
-                  <td colSpan={17} style={{ textAlign: 'center', padding: 50 }}>
+                  <td colSpan={18} style={{ textAlign: 'center', padding: 50 }}>
                     <div style={{ fontSize: 36 }}>📭</div>
                     <div style={{ color: 'var(--text-muted)', marginTop: 8 }}>
                       কোনো রেকর্ড নেই
@@ -1144,6 +1041,22 @@ export default function AmalView() {
                       }}
                     >
                       {row.foodPlates > 0 ? `${row.foodPlates}p` : '—'}
+                    </td>
+                    <td
+                      style={{
+                        textAlign: 'center',
+                        padding: '9px 4px',
+                        fontSize: 11,
+                        fontWeight: row.exerciseMinutes > 0 ? 700 : 400,
+                        color:
+                          row.exerciseMinutes > 0
+                            ? 'var(--accent)'
+                            : 'var(--border)',
+                      }}
+                    >
+                      {row.exerciseMinutes > 0
+                        ? `${(row.exerciseMinutes / 60).toFixed(1)}h`
+                        : '—'}
                     </td>
                     <td
                       style={{
@@ -1314,13 +1227,20 @@ export default function AmalView() {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(3,1fr)',
+                  gridTemplateColumns: 'repeat(4,1fr)',
                   gap: 8,
                   marginBottom: 12,
                 }}
               >
                 {[
                   ['📖', selected.quranPages || 0, 'কুরআন পৃষ্ঠা'],
+                  [
+                    '💪',
+                    selected.exerciseMinutes > 0
+                      ? `${(selected.exerciseMinutes / 60).toFixed(1)}h`
+                      : '—',
+                    'ব্যায়াম',
+                  ],
                   [
                     '😴',
                     selected.sleepMinutes
@@ -1376,7 +1296,7 @@ export default function AmalView() {
                 </div>
               )}
               {selected.foodPlates > 0 && (
-                <div style={{ marginBottom: 10 }}>
+                <div style={{ marginBottom: 6 }}>
                   <span className="badge badge-info">
                     🍽️ {selected.foodPlates} প্লেট
                   </span>
@@ -1431,7 +1351,6 @@ export default function AmalView() {
         </div>
       )}
 
-      {/* Delete Modal */}
       <DeleteModal
         target={deleteTarget}
         onConfirm={handleDeleteConfirm}

@@ -134,6 +134,10 @@ exports.getDashboard = async (req, res) => {
         totalFasting: allAmals.filter((a) => a.fasting).length,
         totalSadaqah: allAmals.reduce((s, a) => s + (a.sadaqahAmount || 0), 0),
         totalQuranPages: allAmals.reduce((s, a) => s + (a.quranPages || 0), 0),
+        totalExerciseMinutes: allAmals.reduce(
+          (s, a) => s + (a.exerciseMinutes || 0),
+          0,
+        ),
         monthTotal: monthAmals.length,
       },
     });
@@ -215,7 +219,6 @@ exports.getAnalytics = async (req, res) => {
 
 exports.updateAmal = async (req, res) => {
   try {
-    // Remove _id and user from update payload to prevent conflicts
     const { _id, user, __v, ...updateData } = req.body;
     const amal = await Amal.findOneAndUpdate(
       { _id: req.params.id, user: req.user._id },
@@ -226,7 +229,6 @@ exports.updateAmal = async (req, res) => {
       return res
         .status(404)
         .json({ success: false, message: 'Amal not found' });
-    // Recalculate progress score
     const checks = [
       amal.fajr,
       amal.dhuhr,

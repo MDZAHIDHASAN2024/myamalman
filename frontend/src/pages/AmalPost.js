@@ -21,6 +21,7 @@ const INITIAL = {
   sadaqah: false,
   sadaqahAmount: '',
   foodPlates: '',
+  exerciseMinutes: '',
   sleepMinutes: '',
   notes: '',
 };
@@ -67,6 +68,7 @@ export default function AmalPost() {
             quranPages: d.quranPages || '',
             sadaqahAmount: d.sadaqahAmount || '',
             foodPlates: d.foodPlates || '',
+            exerciseMinutes: d.exerciseMinutes || '',
             sleepMinutes: d.sleepMinutes || '',
             date: form.date,
           });
@@ -88,6 +90,7 @@ export default function AmalPost() {
         quranPages: Number(form.quranPages) || 0,
         sadaqahAmount: Number(form.sadaqahAmount) || 0,
         foodPlates: Number(form.foodPlates) || 0,
+        exerciseMinutes: Number(form.exerciseMinutes) || 0,
         sleepMinutes: Number(form.sleepMinutes) || 0,
       };
       if (dateExists && existingId) {
@@ -250,7 +253,7 @@ export default function AmalPost() {
           </div>
         </div>
 
-        {/* Quran only - pages */}
+        {/* Quran */}
         <div className="card mb-2">
           <div className="card-header">
             <span className="title">📖 কুরআন তেলাওয়াত</span>
@@ -336,10 +339,16 @@ export default function AmalPost() {
         {/* Lifestyle */}
         <div className="card mb-2">
           <div className="card-header">
-            <span className="title">🍽️ জীবনযাপন</span>
+            <span className="title">🏃 জীবনযাপন</span>
           </div>
           <div className="card-body">
-            <div className="grid-2">
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))',
+                gap: 12,
+              }}
+            >
               {/* Food Plates */}
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">🍽️ খাবার (কত প্লেট)</label>
@@ -366,6 +375,33 @@ export default function AmalPost() {
                   </div>
                 )}
               </div>
+
+              {/* Exercise Sets */}
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">💪 ব্যায়াম (মিনিট)</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  min="0"
+                  max="100"
+                  value={form.exerciseMinutes}
+                  onChange={(e) => set('exerciseMinutes', e.target.value)}
+                  placeholder="যেমন: 3 বা 10"
+                />
+                {form.exerciseMinutes > 0 && (
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: 'var(--accent)',
+                      marginTop: 4,
+                      fontWeight: 600,
+                    }}
+                  >
+                    = {(form.exerciseMinutes / 60).toFixed(1)} ঘণ্টা ব্যায়াম
+                  </div>
+                )}
+              </div>
+
               {/* Sleep */}
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label className="form-label">😴 ঘুম (মিনিট)</label>

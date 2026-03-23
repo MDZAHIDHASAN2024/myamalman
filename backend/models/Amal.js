@@ -21,7 +21,7 @@ const amalSchema = new mongoose.Schema(
     // Quran
     quranPages: { type: Number, default: 0 },
 
-    // Fasting - 'fard' added
+    // Fasting
     fasting: { type: Boolean, default: false },
     fastingType: {
       type: String,
@@ -35,6 +35,7 @@ const amalSchema = new mongoose.Schema(
 
     // Lifestyle
     foodPlates: { type: Number, default: 0 }, // কত প্লেট খেয়েছেন
+    exerciseMinutes: { type: Number, default: 0 }, // কত মিনিট ব্যায়াম
     sleepMinutes: { type: Number, default: 0 },
 
     // Notes
