@@ -674,9 +674,7 @@ function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
               padding: '8px 16px 4px',
               borderBottom: '1px solid var(--border-light)',
             }}
-          >
-            📌 numbered items
-          </div>
+          ></div>
           <div style={{ padding: '6px 0' }}>
             {tip.numberedItems.map((item, i) => (
               <div
@@ -741,9 +739,7 @@ function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
               borderTop: hasNumbered ? '1px solid var(--border)' : 'none',
               borderBottom: '1px solid var(--border-light)',
             }}
-          >
-            📖 expandable items
-          </div>
+          ></div>
           <div>
             {tip.expandableItems.map((item, i) => (
               <ExpandableRow
