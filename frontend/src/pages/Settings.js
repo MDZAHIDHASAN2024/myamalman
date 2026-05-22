@@ -571,7 +571,7 @@ export default function Settings() {
           <div style={{ display: 'grid', gap: 8, marginBottom: 16 }}>
             {[
               ['App Name', 'My Amal — আমার আমল ট্র্যাকার'],
-              ['Version', 'v0.1.0'],
+              ['Version', 'v2.2.0'],
               ['Developer', 'Zahid Hasan'],
               ['Contact', '+880 1745-940065'],
               ['Stack', 'MERN + MVC'],

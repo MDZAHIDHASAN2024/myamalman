@@ -429,6 +429,26 @@ export default function AuthPage() {
                     ? '🔐 Login'
                     : '✅ Account তৈরি করুন'}
               </button>
+
+              {/* ✅ Forgot Password Link — Login এ শুধু দেখাবে */}
+              {isLogin && (
+                <div style={{ textAlign: 'right', marginTop: 10 }}>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/forgot-password')}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--accent)',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                    }}
+                  >
+                    🔑 Password ভুলে গেছেন?
+                  </button>
+                </div>
+              )}
             </form>
           </div>
         </div>
@@ -451,7 +471,7 @@ export default function AuthPage() {
             </button>
           </p>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
-            Developed by Zahid Hasan • v0.1.0
+            Developed by Zahid Hasan • v2.2.0
           </p>
         </div>
       </div>

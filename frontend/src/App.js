@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 
 import AuthPage from './pages/AuthPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import Dashboard from './pages/Dashboard';
 import AmalPost from './pages/AmalPost';
 import AmalView from './pages/AmalView';
@@ -65,6 +66,8 @@ export default function App() {
           />
           <Routes>
             <Route path="/login" element={<AuthPage />} />
+            {/* ✅ Forgot Password Route */}
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route
               path="/dashboard"
