@@ -1,8 +1,9 @@
 const Tip = require('../models/Tip');
+const User = require('../models/User');
 
 const getAll = async (req, res) => {
   try {
-    const { type, search } = req.query;
+    const { type, search, scope } = req.query;
     const query = {};
     if (type) query.type = type;
     if (search) {
@@ -14,10 +15,36 @@ const getAll = async (req, res) => {
         { 'expandableItems.detail': { $regex: search, $options: 'i' } },
       ];
     }
+
+    // ── Visibility rules ──
+    // scope=others (admin only): সব non-admin user এর tips (কোনো admin এর tips বাদে)
+    // default (own): শুধু নিজের tips — normal user ও admin দুজনেই
+    const isAdmin = req.user.role === 'admin';
+
+    if (scope === 'others') {
+      if (!isAdmin) {
+        return res.status(403).json({ success: false, message: 'Forbidden' });
+      }
+      const adminUsers = await User.find({ role: 'admin' }).select('_id');
+      const adminIds = adminUsers.map((u) => u._id);
+      query.createdBy = { $nin: adminIds };
+    } else {
+      query.createdBy = req.user._id;
+    }
+
     const tips = await Tip.find(query)
       .populate('createdBy', 'name')
       .sort({ createdAt: 1 });
-    res.json({ success: true, data: tips });
+
+    let meta;
+    if (scope === 'others') {
+      const uniqueUserIds = new Set(
+        tips.map((t) => String(t.createdBy?._id || t.createdBy)),
+      );
+      meta = { userCount: uniqueUserIds.size };
+    }
+
+    res.json({ success: true, data: tips, meta });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

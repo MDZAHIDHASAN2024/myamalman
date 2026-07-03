@@ -1,13 +1,14 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Layout from '../components/common/Layout';
 import API from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
-const TABS = [
+const BASE_TABS = [
   { key: 'tips', label: '💡 Tips' },
   { key: 'sunnah', label: '🌙 Sunnah' },
 ];
+const OTHERS_TAB = { key: 'others', label: '👥 Other User Tips' };
 
 const COLORS = [
   { key: 'green', bg: '#E8F5E9', accent: '#2E7D32', label: 'সবুজ' },
@@ -19,6 +20,23 @@ const COLORS = [
   { key: 'indigo', bg: '#E8EAF6', accent: '#283593', label: 'ইন্ডিগো' },
   { key: 'brown', bg: '#EFEBE9', accent: '#4E342E', label: 'বাদামি' },
 ];
+
+const AVATAR_COLORS = [
+  '#2E7D32',
+  '#1565C0',
+  '#6A1B9A',
+  '#00695C',
+  '#E65100',
+  '#AD1457',
+  '#283593',
+  '#4E342E',
+];
+function avatarColorFor(id) {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++)
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0;
+  return AVATAR_COLORS[hash % AVATAR_COLORS.length];
+}
 
 // ── Scroll to Top Button ──
 function ScrollToTopButton() {
@@ -58,6 +76,110 @@ function ScrollToTopButton() {
     >
       ↑
     </button>
+  );
+}
+
+// ── User Filter Chips (Other User Tips ট্যাবে) ──
+function UserFilterChips({ users, selected, onSelect }) {
+  if (!users.length) return null;
+  return (
+    <div
+      style={{
+        display: 'flex',
+        gap: 8,
+        flexWrap: 'wrap',
+        marginBottom: 14,
+      }}
+    >
+      <button
+        onClick={() => onSelect(null)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          padding: '6px 12px',
+          borderRadius: 999,
+          border: `1.5px solid ${selected === null ? 'var(--accent)' : 'var(--border)'}`,
+          background: selected === null ? 'var(--accent-bg)' : 'var(--bg-card)',
+          color: selected === null ? 'var(--accent)' : 'var(--text-secondary)',
+          fontWeight: 700,
+          fontSize: 12,
+          cursor: 'pointer',
+          transition: 'all 0.15s',
+        }}
+      >
+        সবাই
+        <span
+          style={{
+            fontSize: 10,
+            fontWeight: 800,
+            background: selected === null ? 'var(--accent)' : 'var(--border)',
+            color: selected === null ? 'white' : 'var(--text-muted)',
+            borderRadius: 999,
+            padding: '1px 6px',
+          }}
+        >
+          {users.reduce((sum, u) => sum + u.count, 0)}
+        </span>
+      </button>
+
+      {users.map((u) => {
+        const active = selected === u.id;
+        return (
+          <button
+            key={u.id}
+            onClick={() => onSelect(active ? null : u.id)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '6px 12px 6px 6px',
+              borderRadius: 999,
+              border: `1.5px solid ${active ? avatarColorFor(u.id) : 'var(--border)'}`,
+              background: active
+                ? avatarColorFor(u.id) + '18'
+                : 'var(--bg-card)',
+              color: active ? avatarColorFor(u.id) : 'var(--text-secondary)',
+              fontWeight: 700,
+              fontSize: 12,
+              cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+          >
+            <span
+              style={{
+                width: 20,
+                height: 20,
+                borderRadius: '50%',
+                background: avatarColorFor(u.id),
+                color: 'white',
+                fontSize: 10,
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              {u.name.trim().charAt(0).toUpperCase()}
+            </span>
+            {u.name}
+            <span
+              style={{
+                fontSize: 10,
+                fontWeight: 800,
+                background: active ? avatarColorFor(u.id) : 'var(--border)',
+                color: active ? 'white' : 'var(--text-muted)',
+                borderRadius: 999,
+                padding: '1px 6px',
+              }}
+            >
+              {u.count}
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
@@ -583,7 +705,9 @@ function ExpandableRow({ item, accent, open, onToggle }) {
 
 // ── Tip Card ──
 function TipCard({ tip, onEdit, onDelete, isOwner, isAdmin, type }) {
-  const icon = type === 'sunnah' ? '🌙' : '💡';
+  // 'others' ট্যাবে tips/sunnah মিশ্রিত থাকে, তাই আসল type নেয়া হয় tip নিজের থেকে
+  const effectiveType = type === 'others' ? tip.type : type;
+  const icon = effectiveType === 'sunnah' ? '🌙' : '💡';
   const rawColor = tip.color || COLORS[0].bg;
   const presetDef = COLORS.find((c) => c.bg === rawColor || c.key === rawColor);
   const accentBg = presetDef ? presetDef.bg : rawColor;
@@ -893,9 +1017,13 @@ export default function TipsSunnah() {
   const { user } = useAuth();
   const isAdmin = user && user.role === 'admin';
 
+  const tabs = isAdmin ? [...BASE_TABS, OTHERS_TAB] : BASE_TABS;
+
   const [activeTab, setActiveTab] = useState('tips');
   const [tips, setTips] = useState([]);
-  const [counts, setCounts] = useState({ tips: 0, sunnah: 0 });
+  const [counts, setCounts] = useState({ tips: 0, sunnah: 0, others: 0 });
+  const [othersUserCount, setOthersUserCount] = useState(0);
+  const [selectedOtherUser, setSelectedOtherUser] = useState(null);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [loading, setLoading] = useState(true);
@@ -910,17 +1038,29 @@ export default function TipsSunnah() {
         API.get('/tips?type=tips'),
         API.get('/tips?type=sunnah'),
       ]);
-      setCounts({
+      const next = {
         tips: (tipsRes.data.data || []).length,
         sunnah: (sunnahRes.data.data || []).length,
-      });
+        others: 0,
+      };
+      if (isAdmin) {
+        const othersRes = await API.get('/tips?scope=others');
+        next.others = (othersRes.data.data || []).length;
+        setOthersUserCount(othersRes.data.meta?.userCount || 0);
+      }
+      setCounts(next);
     } catch (_) {}
-  }, []);
+  }, [isAdmin]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ type: activeTab });
+      const params = new URLSearchParams();
+      if (activeTab === 'others') {
+        params.set('scope', 'others');
+      } else {
+        params.set('type', activeTab);
+      }
       if (search.trim()) params.set('search', search.trim());
       const res = await API.get('/tips?' + params.toString());
       setTips(res.data.data || []);
@@ -941,6 +1081,33 @@ export default function TipsSunnah() {
     const t = setTimeout(() => setSearch(searchInput), 400);
     return () => clearTimeout(t);
   }, [searchInput]);
+
+  // ট্যাব বদলালে user filter reset হবে
+  useEffect(() => {
+    setSelectedOtherUser(null);
+  }, [activeTab]);
+
+  // 'Other User Tips' ট্যাবে loaded tips থেকে distinct user list বানানো (chip দেখানোর জন্য)
+  const otherUsersList = useMemo(() => {
+    if (activeTab !== 'others') return [];
+    const map = new Map();
+    tips.forEach((t) => {
+      const id = t.createdBy && (t.createdBy._id || t.createdBy);
+      const name = (t.createdBy && t.createdBy.name) || 'Unknown';
+      if (!id) return;
+      if (!map.has(id)) map.set(id, { id, name, count: 0 });
+      map.get(id).count += 1;
+    });
+    return Array.from(map.values()).sort((a, b) => b.count - a.count);
+  }, [tips, activeTab]);
+
+  const visibleTips = useMemo(() => {
+    if (activeTab !== 'others' || !selectedOtherUser) return tips;
+    return tips.filter((t) => {
+      const id = t.createdBy && (t.createdBy._id || t.createdBy);
+      return id === selectedOtherUser;
+    });
+  }, [tips, activeTab, selectedOtherUser]);
 
   const handleSave = async (data) => {
     try {
@@ -976,6 +1143,8 @@ export default function TipsSunnah() {
     }
   };
 
+  const canCreateHere = activeTab !== 'others';
+
   return (
     <Layout title="Tips & Sunnah">
       {/* Scroll to Top Button */}
@@ -1000,9 +1169,10 @@ export default function TipsSunnah() {
               borderRadius: 10,
               padding: 3,
               border: '1px solid var(--border)',
+              flexWrap: 'wrap',
             }}
           >
-            {TABS.map((tab) => (
+            {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
@@ -1041,25 +1211,40 @@ export default function TipsSunnah() {
                     padding: '1px 7px',
                     minWidth: 22,
                     textAlign: 'center',
+                    display: 'inline-flex',
+                    alignItems: 'baseline',
+                    gap: 3,
                   }}
                 >
                   {counts[tab.key]}
+                  {tab.key === 'others' && othersUserCount > 0 && (
+                    <span style={{ fontSize: 8, opacity: 0.85 }}>
+                      ({othersUserCount} user)
+                    </span>
+                  )}
                 </span>
               </button>
             ))}
           </div>
-          <button
-            onClick={() => {
-              setEditTarget(null);
-              setShowModal(true);
-            }}
-            className="btn btn-primary"
-          >
-            ➕ নতুন Card
-          </button>
+          {canCreateHere && (
+            <button
+              onClick={() => {
+                setEditTarget(null);
+                setShowModal(true);
+              }}
+              className="btn btn-primary"
+            >
+              ➕ নতুন Card
+            </button>
+          )}
         </div>
 
-        <div style={{ position: 'relative' }}>
+        <div
+          style={{
+            position: 'relative',
+            marginBottom: activeTab === 'others' ? 14 : 0,
+          }}
+        >
           <span
             style={{
               position: 'absolute',
@@ -1081,13 +1266,25 @@ export default function TipsSunnah() {
             style={{ paddingLeft: 36 }}
           />
         </div>
+
+        {activeTab === 'others' && !loading && (
+          <UserFilterChips
+            users={otherUsersList}
+            selected={selectedOtherUser}
+            onSelect={setSelectedOtherUser}
+          />
+        )}
       </div>
 
       {/* Content */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: 60 }}>
           <div style={{ fontSize: 36, marginBottom: 10 }}>
-            {activeTab === 'tips' ? '💡' : '🌙'}
+            {activeTab === 'sunnah'
+              ? '🌙'
+              : activeTab === 'others'
+                ? '👥'
+                : '💡'}
           </div>
           <div
             style={{
@@ -1099,10 +1296,14 @@ export default function TipsSunnah() {
             Loading...
           </div>
         </div>
-      ) : tips.length === 0 ? (
+      ) : visibleTips.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 60 }}>
           <div style={{ fontSize: 52, marginBottom: 12 }}>
-            {activeTab === 'tips' ? '💡' : '🌙'}
+            {activeTab === 'sunnah'
+              ? '🌙'
+              : activeTab === 'others'
+                ? '👥'
+                : '💡'}
           </div>
           <div
             style={{
@@ -1112,9 +1313,13 @@ export default function TipsSunnah() {
               marginBottom: 6,
             }}
           >
-            {search ? 'কোনো result পাওয়া যায়নি' : 'এখনো কোনো card নেই'}
+            {search
+              ? 'কোনো result পাওয়া যায়নি'
+              : selectedOtherUser
+                ? 'এই user এর কোনো card নেই'
+                : 'এখনো কোনো card নেই'}
           </div>
-          {!search && (
+          {!search && canCreateHere && (
             <button
               onClick={() => {
                 setEditTarget(null);
@@ -1128,7 +1333,7 @@ export default function TipsSunnah() {
           )}
         </div>
       ) : (
-        tips.map((tip) => {
+        visibleTips.map((tip) => {
           const ownerId = tip.createdBy && (tip.createdBy._id || tip.createdBy);
           const userId = user && user._id;
           return (
@@ -1151,7 +1356,7 @@ export default function TipsSunnah() {
       {showModal && (
         <TipModal
           initial={editTarget}
-          type={activeTab}
+          type={editTarget ? editTarget.type : activeTab}
           onClose={() => {
             setShowModal(false);
             setEditTarget(null);

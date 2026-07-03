@@ -24,13 +24,12 @@ export function getCurrentHijriDisplay() {
   try {
     const parts = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
       day: 'numeric',
-      month: 'long', // 'short' নয় — mobile compatibility এর জন্য
+      month: 'long',
       year: 'numeric',
       timeZone: TZ,
     }).formatToParts(d);
     const get = (t) => parts.find((p) => p.type === t)?.value || '';
-    const monthShort = get('month').slice(0, 4); // সব device এ consistent
-    return `${monthShort}. ${get('day')}, ${get('year')} AH`;
+    return `${get('month')} ${get('day')}, ${get('year')} AH`;
   } catch {
     return '';
   }
@@ -92,13 +91,12 @@ export function toHijriShort(dateStr) {
   try {
     const parts = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
       day: 'numeric',
-      month: 'long', // long দিয়ে নিয়ে নিজে short করি
+      month: 'long',
       year: 'numeric',
       timeZone: TZ,
     }).formatToParts(new Date(dateStr + 'T12:00:00'));
     const get = (t) => parts.find((p) => p.type === t)?.value || '';
-    const monthShort = get('month').slice(0, 4);
-    return `${monthShort}. ${get('day')}, ${get('year')} AH`;
+    return `${get('month')} ${get('day')}, ${get('year')} AH`;
   } catch {
     return '';
   }

@@ -272,7 +272,7 @@ export default function AuthPage() {
               {/* Name — Register only */}
               {!isLogin && (
                 <div className="form-group">
-                  <label className="form-label">আপনার নাম</label>
+                  <label className="form-label">Name</label>
                   <input
                     className={`form-control${errors.name ? ' error' : ''}`}
                     type="text"
@@ -471,7 +471,7 @@ export default function AuthPage() {
             </button>
           </p>
           <p style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 8 }}>
-            Developed by Zahid Hasan • v2.2.0
+            Developed by Zahid Hasan • v3.7.26
           </p>
         </div>
       </div>

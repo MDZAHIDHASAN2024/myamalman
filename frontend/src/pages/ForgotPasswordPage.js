@@ -425,7 +425,7 @@ export default function ForgotPasswordPage() {
           {step === STEPS.EMAIL && (
             <form onSubmit={handleEmailSubmit}>
               <div className="form-group" style={{ marginBottom: 20 }}>
-                <label className="form-label">আপনার Email</label>
+                <label className="form-label">Your Email</label>
                 <input
                   className={`form-control${errors.email ? ' error' : ''}`}
                   type="email"
