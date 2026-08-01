@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import Layout from '../components/common/Layout';
 import API from '../utils/api';
-import { getTodayStr, toHijriShort, formatDate } from '../utils/hijri';
+import {
+  getTodayStr,
+  getAmalMaxDate,
+  toHijriShort,
+  formatDate,
+} from '../utils/hijri';
 import toast from 'react-hot-toast';
 
 const INITIAL = {
@@ -131,7 +136,7 @@ export default function AmalPost() {
                   className="form-control"
                   value={form.date}
                   onChange={(e) => set('date', e.target.value)}
-                  max={getTodayStr()}
+                  max={getAmalMaxDate()}
                 />
                 {hijri && (
                   <div

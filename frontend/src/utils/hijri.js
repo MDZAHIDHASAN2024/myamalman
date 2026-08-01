@@ -68,6 +68,18 @@ export function getTodayStr() {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
 }
 
+// Amal posting জন্য সর্বোচ্চ অনুমোদিত তারিখ।
+// সন্ধ্যা ৬টার (Maghrib) আগে: আজকের তারিখ পর্যন্তই পোস্ট করা যাবে।
+// সন্ধ্যা ৬টার পর: আগামীকালের আমলও পোস্ট করা যাবে।
+export function getAmalMaxDate() {
+  const bdHour = getBDHour();
+  const todayStr = getTodayStr();
+  if (bdHour < MAGHRIB_HOUR) return todayStr;
+  const [y, m, d] = todayStr.split('-').map(Number);
+  const next = new Date(Date.UTC(y, m - 1, d + 1));
+  return next.toISOString().split('T')[0];
+}
+
 export function formatDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr + 'T00:00:00');
