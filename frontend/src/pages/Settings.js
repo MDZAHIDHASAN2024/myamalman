@@ -629,7 +629,7 @@ export default function Settings() {
             <div
               style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}
             >
-              My Amal v2.8.26 • Made with ❤️ for the Ummah
+              My Amal v23.9.26 • Made with ❤️ for the Ummah
             </div>
           </div>
         </div>
